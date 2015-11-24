@@ -16,13 +16,14 @@ init = 1
 
 --UPDATE (WEST)
 
-type Action = Tick 
-  | Tock
+type Action = Grow
   | NoOp
 
 update : Action -> Model -> Model
 update action model =
-  model + 1 
+  case action of 
+    NoOp -> model
+    Grow -> model + 1
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -34,13 +35,18 @@ address =
 
 actions : Signal Action
 actions =
-  actionMailbox.signal
+  Signal.map mouseMapper Mouse.x
+
+mouseMapper : Int -> Action
+mouseMapper x =
+  Grow 
+
 
 --VIEW (NORTH)
 
 view : Address Action -> Model -> Element
 view address model =
-  collage 271 137 [filled  (colorOf model) (circle (sizeOf model))]
+  collage 2371 1337 [filled  (colorOf model) (circle (sizeOf model))]
 
 colorOf : Model -> Color
 colorOf model =
@@ -51,7 +57,7 @@ colorOf model =
 
 sizeOf : Model -> Float
 sizeOf model =
-  toFloat model * 73.1
+  toFloat model / 2
 
 
 --MAIN (EAST)
@@ -59,7 +65,9 @@ sizeOf model =
 main : Signal Element
 main =
   Signal.map (view address)
-    (Signal.foldp update init actions) 
+    (Signal.foldp update init actions)
+
+
 
 
 --(UNTIL THE EAST SHALL RISE)

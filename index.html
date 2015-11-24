@@ -6242,11 +6242,12 @@ Elm.Main.make = function (_elm) {
    $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
+   $Mouse = Elm.Mouse.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var sizeOf = function (model) {
-      return $Basics.toFloat(model) * 73.1;
+      return $Basics.toFloat(model) / 2;
    };
    var colorOf = function (model) {
       return A3($Color.rgb,
@@ -6256,34 +6257,39 @@ Elm.Main.make = function (_elm) {
    };
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
-      271,
-      137,
+      2371,
+      1337,
       _U.list([A2($Graphics$Collage.filled,
       colorOf(model),
       $Graphics$Collage.circle(sizeOf(model)))]));
    });
    var update = F2(function (action,model) {
-      return model + 1;
+      var _p0 = action;
+      if (_p0.ctor === "NoOp") {
+            return model;
+         } else {
+            return model + 1;
+         }
    });
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
-   var actions = actionMailbox.signal;
-   var Tock = {ctor: "Tock"};
-   var Tick = {ctor: "Tick"};
+   var Grow = {ctor: "Grow"};
+   var mouseMapper = function (x) {    return Grow;};
+   var actions = A2($Signal.map,mouseMapper,$Mouse.x);
    var init = 1;
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
    return _elm.Main.values = {_op: _op
                              ,init: init
-                             ,Tick: Tick
-                             ,Tock: Tock
+                             ,Grow: Grow
                              ,NoOp: NoOp
                              ,update: update
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions
+                             ,mouseMapper: mouseMapper
                              ,view: view
                              ,colorOf: colorOf
                              ,sizeOf: sizeOf
