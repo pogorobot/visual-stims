@@ -46,7 +46,12 @@ mouseMapper x =
 
 view : Address Action -> Model -> Element
 view address model =
-  collage 2371 1337 [filled  (colorOf model) (circle (sizeOf model))]
+  collage 2371 1337 [trunk model]
+
+trunk : Model -> Form
+trunk model =
+  segment (1,1) (1, (toFloat model))
+    |> traced (solid (colorOf model))
 
 colorOf : Model -> Color
 colorOf model =

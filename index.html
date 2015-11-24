@@ -6255,13 +6255,18 @@ Elm.Main.make = function (_elm) {
       $Basics.floor(255 / $Basics.toFloat(model)),
       A2($Basics._op["%"],255,model));
    };
+   var trunk = function (model) {
+      return A2($Graphics$Collage.traced,
+      $Graphics$Collage.solid(colorOf(model)),
+      A2($Graphics$Collage.segment,
+      {ctor: "_Tuple2",_0: 1,_1: 1},
+      {ctor: "_Tuple2",_0: 1,_1: $Basics.toFloat(model)}));
+   };
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
       2371,
       1337,
-      _U.list([A2($Graphics$Collage.filled,
-      colorOf(model),
-      $Graphics$Collage.circle(sizeOf(model)))]));
+      _U.list([trunk(model)]));
    });
    var update = F2(function (action,model) {
       var _p0 = action;
@@ -6291,6 +6296,7 @@ Elm.Main.make = function (_elm) {
                              ,actions: actions
                              ,mouseMapper: mouseMapper
                              ,view: view
+                             ,trunk: trunk
                              ,colorOf: colorOf
                              ,sizeOf: sizeOf
                              ,main: main};
