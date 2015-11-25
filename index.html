@@ -6246,48 +6246,69 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
+   var height = 713;
+   var width = 666;
    var sizeOf = function (model) {
-      return $Basics.toFloat(model.length) / 5;
+      return $Basics.toFloat(model.length) / 2;
    };
    var colorOf = function (model) {
       return A3($Color.rgb,1,66,42);
    };
-   var trunk = function (model) {
-      return A2($Graphics$Collage.traced,
-      $Graphics$Collage.solid(colorOf(model)),
-      A2($Graphics$Collage.segment,
+   var trunkPath = function (model) {
+      return A2($Graphics$Collage.segment,
       {ctor: "_Tuple2",_0: model.root.x,_1: model.root.y},
       {ctor: "_Tuple2"
       ,_0: model.root.x
-      ,_1: model.root.y + sizeOf(model)}));
+      ,_1: model.root.y + sizeOf(model)});
    };
-   var height = 713;
-   var width = 1372;
+   var draw = function (model) {
+      return $Graphics$Collage.traced($Graphics$Collage.solid(colorOf(model)));
+   };
+   var incarnate = function (model) {
+      return A2(draw,model,trunkPath(model));
+   };
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
       width,
       height,
-      _U.list([trunk(model)]));
+      _U.list([incarnate(model)]));
    });
-   var transpose = function (mouse) {
+   var branch = function (model) {
+      return _U.update(model,
+      {root: {x: model.root.x / 2,y: model.root.y / 2}});
+   };
+   var toElmCoordinates = function (mouse) {
       return {x: mouse.x - $Basics.toFloat(width) / 2
              ,y: $Basics.toFloat(height) / 2 - mouse.y};
+   };
+   var move = F2(function (model,position) {
+      return _U.update(model,{root: toElmCoordinates(position)});
+   });
+   var grow = function (model) {
+      return _U.update(model,{length: model.length + 1});
    };
    var update = F2(function (action,model) {
       var _p0 = action;
       switch (_p0.ctor)
       {case "NoOp": return model;
-         case "Grow": return _U.update(model,{length: model.length + 1});
-         default: return _U.update(model,{root: transpose(_p0._0)});}
+         case "Grow": return grow(model);
+         case "Move": return A2(move,model,_p0._0);
+         default: return branch(model);}
    });
+   var Branch = {ctor: "Branch"};
+   var slowAction = function (second) {    return Branch;};
+   var slowSignal = A2($Signal.map,
+   slowAction,
+   $Time.every(3 * $Time.second));
    var Move = function (a) {    return {ctor: "Move",_0: a};};
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
    var Grow = {ctor: "Grow"};
-   var timeMapper = function (frame) {    return Grow;};
-   var actions = A2($Signal.map,timeMapper,$Time.fps(42));
-   var init = {root: {x: 1,y: 1},length: 1};
+   var fastAction = function (frame) {    return Grow;};
+   var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
+   var actions = A2($Signal.merge,fastSignal,slowSignal);
+   var init = {root: {x: 237,y: 1},length: 1};
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
@@ -6300,17 +6321,26 @@ Elm.Main.make = function (_elm) {
                              ,Grow: Grow
                              ,NoOp: NoOp
                              ,Move: Move
+                             ,Branch: Branch
                              ,update: update
-                             ,transpose: transpose
-                             ,width: width
-                             ,height: height
+                             ,grow: grow
+                             ,move: move
+                             ,toElmCoordinates: toElmCoordinates
+                             ,branch: branch
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions
-                             ,timeMapper: timeMapper
+                             ,fastSignal: fastSignal
+                             ,slowSignal: slowSignal
+                             ,fastAction: fastAction
+                             ,slowAction: slowAction
                              ,view: view
-                             ,trunk: trunk
+                             ,incarnate: incarnate
+                             ,draw: draw
+                             ,trunkPath: trunkPath
                              ,colorOf: colorOf
                              ,sizeOf: sizeOf
-                             ,main: main};
+                             ,main: main
+                             ,width: width
+                             ,height: height};
 };</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>

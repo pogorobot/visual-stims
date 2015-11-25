@@ -12,30 +12,40 @@ import Mouse exposing (..)
 type alias Model = {root : {x: Float, y : Float}, length : Int}
 
 init : Model
-init = { root = {x = 1, y = 1}, length = 1 }
+init = { root = {x = 237, y = 1}, length = 1 }
 
 --UPDATE (WEST)
 
 type Action = Grow
   | NoOp
   | Move {x : Float, y : Float}
+  | Branch
 
 update : Action -> Model -> Model
 update action model =
   case action of 
     NoOp -> model
-    Grow -> { model | length = model.length + 1 }
-    Move position -> { model | root = transpose position }
+    Grow -> grow model
+    Move position -> move model position
+    Branch -> branch model
 
-transpose : {x : Float, y : Float} -> {x : Float, y : Float}
-transpose mouse =
+
+grow : Model -> Model
+grow model =
+  { model | length = model.length + 1 }
+
+move : Model -> {x: Float, y: Float} -> Model
+move model position =
+  { model | root = toElmCoordinates position }
+
+toElmCoordinates : {x : Float, y : Float} -> {x : Float, y : Float}
+toElmCoordinates mouse =
   {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
 
-width : Int
-width = 1372
+branch : Model -> Model
+branch model =
+  { model | root = {x = model.root.x / 2, y = model.root.y / 2}}
 
-height : Int
-height = 713
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -47,23 +57,48 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.map timeMapper (fps 42)
+  Signal.merge
+    fastSignal slowSignal
 
-timeMapper : Time -> Action
-timeMapper frame =
+
+fastSignal : Signal Action
+fastSignal =
+  Signal.map fastAction (fps 42)
+
+slowSignal : Signal Action
+slowSignal =
+  Signal.map slowAction (Time.every (3 * Time.second))
+
+
+fastAction : Time -> Action
+fastAction frame =
   Grow
+
+slowAction : Time -> Action
+slowAction second =
+  Branch
 
 
 --VIEW (NORTH)
 
 view : Address Action -> Model -> Element
 view address model =
-  collage width height [trunk model]
+  collage width height [incarnate model]
 
-trunk : Model -> Form
-trunk model =
-  segment (model.root.x, model.root.y) (model.root.x, (model.root.y + sizeOf model))
-    |> traced (solid (colorOf model))
+incarnate : Model -> Form
+incarnate model =
+  trunkPath model
+  |> draw model
+
+draw : Model -> Path -> Form
+draw model =
+  colorOf model |> solid |> traced
+
+trunkPath : Model -> Path
+trunkPath model =
+  segment 
+    (model.root.x, model.root.y) 
+    (model.root.x, (model.root.y + sizeOf model))
 
 colorOf : Model -> Color
 colorOf model =
@@ -74,7 +109,7 @@ colorOf model =
 
 sizeOf : Model -> Float
 sizeOf model =
-  toFloat model.length / 5
+  toFloat model.length / 2
 
 
 --MAIN (EAST)
@@ -83,6 +118,12 @@ main : Signal Element
 main =
   Signal.map (view address)
     (Signal.foldp update init actions)
+
+width : Int
+width = 666
+
+height : Int
+height = 713
 
 
 
