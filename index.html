@@ -6247,50 +6247,69 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var sizeOf = function (model) {
-      return $Basics.toFloat(model) / 2;
+      return $Basics.toFloat(model.length) / 5;
    };
    var colorOf = function (model) {
-      return A3($Color.rgb,
-      255 - model,
-      $Basics.floor(255 / $Basics.toFloat(model)),
-      A2($Basics._op["%"],255,model));
+      return A3($Color.rgb,1,66,42);
    };
    var trunk = function (model) {
       return A2($Graphics$Collage.traced,
       $Graphics$Collage.solid(colorOf(model)),
       A2($Graphics$Collage.segment,
-      {ctor: "_Tuple2",_0: 1,_1: 1},
-      {ctor: "_Tuple2",_0: 1,_1: $Basics.toFloat(model)}));
+      {ctor: "_Tuple2",_0: model.root.x,_1: model.root.y},
+      {ctor: "_Tuple2"
+      ,_0: model.root.x
+      ,_1: model.root.y + sizeOf(model)}));
    };
+   var height = 444;
+   var width = 444;
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
-      2371,
-      1337,
+      width,
+      height,
       _U.list([trunk(model)]));
    });
+   var transpose = function (mouse) {
+      return {x: mouse.x - $Basics.toFloat(width) / 2
+             ,y: $Basics.toFloat(height) / 2 - mouse.y};
+   };
    var update = F2(function (action,model) {
       var _p0 = action;
-      if (_p0.ctor === "NoOp") {
-            return model;
-         } else {
-            return model + 1;
-         }
+      switch (_p0.ctor)
+      {case "NoOp": return model;
+         case "Grow": return _U.update(model,{length: model.length + 1});
+         default: return _U.update(model,{root: transpose(_p0._0)});}
    });
+   var Move = function (a) {    return {ctor: "Move",_0: a};};
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
    var Grow = {ctor: "Grow"};
-   var mouseMapper = function (x) {    return Grow;};
-   var actions = A2($Signal.map,mouseMapper,$Mouse.x);
-   var init = 1;
+   var mouseMapper = function (_p1) {
+      var _p2 = _p1;
+      var _p4 = _p2._1;
+      var _p3 = _p2._0;
+      return _U.cmp(_p3,_p4) > 0 ? Move({x: $Basics.toFloat(_p3)
+                                        ,y: $Basics.toFloat(_p4)}) : Grow;
+   };
+   var actions = A2($Signal.map,mouseMapper,$Mouse.position);
+   var init = {root: {x: 1,y: 1},length: 1};
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
+   var Model = F2(function (a,b) {
+      return {root: a,length: b};
+   });
    return _elm.Main.values = {_op: _op
+                             ,Model: Model
                              ,init: init
                              ,Grow: Grow
                              ,NoOp: NoOp
+                             ,Move: Move
                              ,update: update
+                             ,transpose: transpose
+                             ,width: width
+                             ,height: height
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions

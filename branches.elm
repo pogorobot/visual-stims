@@ -9,21 +9,33 @@ import Signal exposing (..)
 import Mouse exposing (..)
 
 --MODEL (SOUTH)
-type alias Model = Int
+type alias Model = {root : {x: Float, y : Float}, length : Int}
 
 init : Model
-init = 1
+init = { root = {x = 1, y = 1}, length = 1 }
 
 --UPDATE (WEST)
 
 type Action = Grow
   | NoOp
+  | Move {x : Float, y : Float}
 
 update : Action -> Model -> Model
 update action model =
   case action of 
     NoOp -> model
-    Grow -> model + 1
+    Grow -> { model | length = model.length + 1 }
+    Move position -> { model | root = transpose position }
+
+transpose : {x : Float, y : Float} -> {x : Float, y : Float}
+transpose mouse =
+  {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
+
+width : Int
+width = 444
+
+height : Int
+height = 444
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -35,34 +47,36 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.map mouseMapper Mouse.x
+  Signal.map mouseMapper Mouse.position
 
-mouseMapper : Int -> Action
-mouseMapper x =
-  Grow 
+mouseMapper : (Int, Int) -> Action
+mouseMapper (x,y) =
+  if x > y then
+    Move {x = toFloat x, y = toFloat y}
+    else Grow
 
 
 --VIEW (NORTH)
 
 view : Address Action -> Model -> Element
 view address model =
-  collage 2371 1337 [trunk model]
+  collage width height [trunk model]
 
 trunk : Model -> Form
 trunk model =
-  segment (1,1) (1, (toFloat model))
+  segment (model.root.x, model.root.y) (model.root.x, (model.root.y + sizeOf model))
     |> traced (solid (colorOf model))
 
 colorOf : Model -> Color
 colorOf model =
   rgb 
-    (255 - model)
-    (floor (255 / toFloat model))
-    (255 % model)
+    (1)
+    (66)
+    (42)
 
 sizeOf : Model -> Float
 sizeOf model =
-  toFloat model / 2
+  toFloat model.length / 5
 
 
 --MAIN (EAST)
