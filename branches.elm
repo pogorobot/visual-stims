@@ -32,10 +32,10 @@ transpose mouse =
   {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
 
 width : Int
-width = 444
+width = 1372
 
 height : Int
-height = 444
+height = 713
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -47,13 +47,11 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.map mouseMapper Mouse.position
+  Signal.map timeMapper (fps 42)
 
-mouseMapper : (Int, Int) -> Action
-mouseMapper (x,y) =
-  if x > y then
-    Move {x = toFloat x, y = toFloat y}
-    else Grow
+timeMapper : Time -> Action
+timeMapper frame =
+  Grow
 
 
 --VIEW (NORTH)

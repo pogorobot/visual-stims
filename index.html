@@ -6242,9 +6242,9 @@ Elm.Main.make = function (_elm) {
    $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
-   $Mouse = Elm.Mouse.make(_elm),
    $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
+   $Signal = Elm.Signal.make(_elm),
+   $Time = Elm.Time.make(_elm);
    var _op = {};
    var sizeOf = function (model) {
       return $Basics.toFloat(model.length) / 5;
@@ -6261,8 +6261,8 @@ Elm.Main.make = function (_elm) {
       ,_0: model.root.x
       ,_1: model.root.y + sizeOf(model)}));
    };
-   var height = 444;
-   var width = 444;
+   var height = 713;
+   var width = 1372;
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
       width,
@@ -6285,14 +6285,8 @@ Elm.Main.make = function (_elm) {
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
    var Grow = {ctor: "Grow"};
-   var mouseMapper = function (_p1) {
-      var _p2 = _p1;
-      var _p4 = _p2._1;
-      var _p3 = _p2._0;
-      return _U.cmp(_p3,_p4) > 0 ? Move({x: $Basics.toFloat(_p3)
-                                        ,y: $Basics.toFloat(_p4)}) : Grow;
-   };
-   var actions = A2($Signal.map,mouseMapper,$Mouse.position);
+   var timeMapper = function (frame) {    return Grow;};
+   var actions = A2($Signal.map,timeMapper,$Time.fps(42));
    var init = {root: {x: 1,y: 1},length: 1};
    var main = A2($Signal.map,
    view(address),
@@ -6313,7 +6307,7 @@ Elm.Main.make = function (_elm) {
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions
-                             ,mouseMapper: mouseMapper
+                             ,timeMapper: timeMapper
                              ,view: view
                              ,trunk: trunk
                              ,colorOf: colorOf
