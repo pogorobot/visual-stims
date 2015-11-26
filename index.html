@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Branch</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>Main</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Basics = {};
 Elm.Native.Basics.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -6229,11 +6229,11 @@ Elm.Mouse.make = function (_elm) {
                               ,y: y
                               ,isDown: isDown
                               ,clicks: clicks};
-};Elm.Branch = Elm.Branch || {};
-Elm.Branch.make = function (_elm) {
+};Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
    "use strict";
-   _elm.Branch = _elm.Branch || {};
-   if (_elm.Branch.values) return _elm.Branch.values;
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values) return _elm.Main.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Color = Elm.Color.make(_elm),
@@ -6242,6 +6242,7 @@ Elm.Branch.make = function (_elm) {
    $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
+   $Mouse = Elm.Mouse.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Time = Elm.Time.make(_elm);
@@ -6267,16 +6268,6 @@ Elm.Branch.make = function (_elm) {
    var incarnate = function (model) {
       return A2(draw,model,trunkPath(model));
    };
-   var view = F2(function (address,model) {
-      return A3($Graphics$Collage.collage,
-      width,
-      height,
-      _U.list([incarnate(model)]));
-   });
-   var branch = function (model) {
-      return _U.update(model,
-      {root: {x: model.root.x / 2,y: model.root.y / 2}});
-   };
    var toElmCoordinates = function (mouse) {
       return {x: mouse.x - $Basics.toFloat(width) / 2
              ,y: $Basics.toFloat(height) / 2 - mouse.y};
@@ -6284,22 +6275,21 @@ Elm.Branch.make = function (_elm) {
    var move = F2(function (model,position) {
       return _U.update(model,{root: toElmCoordinates(position)});
    });
-   var grow = function (model) {
-      return _U.update(model,{length: model.length + 1});
+   var shrink = function (model) {
+      return _U.update(model,{length: model.length * 2 / 3 | 0});
    };
-   var update = F2(function (action,model) {
-      var _p0 = action;
-      switch (_p0.ctor)
-      {case "NoOp": return model;
-         case "Grow": return grow(model);
-         case "Move": return A2(move,model,_p0._0);
-         default: return branch(model);}
-   });
-   var Branch = {ctor: "Branch"};
-   var slowAction = function (second) {    return Branch;};
+   var Shrink = {ctor: "Shrink"};
+   var slowAction = function (second) {    return Shrink;};
    var slowSignal = A2($Signal.map,
    slowAction,
    $Time.every(3 * $Time.second));
+   var Branch = function (a) {    return {ctor: "Branch",_0: a};};
+   var mouseAction = function (_p0) {
+      var _p1 = _p0;
+      return Branch(toElmCoordinates({x: $Basics.toFloat(_p1._0)
+                                     ,y: $Basics.toFloat(_p1._1)}));
+   };
+   var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
    var Move = function (a) {    return {ctor: "Move",_0: a};};
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
@@ -6307,22 +6297,106 @@ Elm.Branch.make = function (_elm) {
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
-   var actions = A2($Signal.merge,fastSignal,slowSignal);
+   var actions = A2($Signal.merge,fastSignal,mouseSignal);
+   var extractModels = function (_p2) {
+      var _p3 = _p2;
+      return _p3._0;
+   };
+   var getChildren = function (model) {
+      return extractModels(model.children);
+   };
+   var view = F2(function (address,model) {
+      return A3($Graphics$Collage.collage,
+      width,
+      height,
+      A2($List.append,
+      _U.list([incarnate(model)]),
+      A2($List.map,incarnate,getChildren(model))));
+   });
+   var Position = F2(function (a,b) {    return {x: a,y: b};});
    var Children = function (a) {
       return {ctor: "Children",_0: a};
    };
    var init = {root: {x: 237,y: 42}
               ,length: 1
               ,children: Children(_U.list([]))};
+   var sproutFrom = function (position) {
+      return {root: position
+             ,length: 40
+             ,children: Children(_U.list([]))};
+   };
+   var addToList = F2(function (childrenList,position) {
+      return A2($List.append,
+      childrenList,
+      _U.list([sproutFrom(position)]));
+   });
+   var grow = function (model) {
+      return _U.update(model,
+      {length: model.length + 1
+      ,children: Children(A2($List.map,grow,getChildren(model)))});
+   };
+   var oneMore = function (_p4) {
+      var _p5 = _p4;
+      return Children(A2(addToList,_p5._0._0,_p5._1));
+   };
+   var branch = F2(function (model,position) {
+      return _U.update(model,
+      {children: oneMore({ctor: "_Tuple2"
+                         ,_0: model.children
+                         ,_1: position})});
+   });
+   var update = F2(function (action,model) {
+      var _p6 = action;
+      switch (_p6.ctor)
+      {case "NoOp": return model;
+         case "Grow": return grow(model);
+         case "Move": return A2(move,model,_p6._0);
+         case "Branch": return A2(branch,model,_p6._0);
+         default: return shrink(model);}
+   });
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
    var Model = F3(function (a,b,c) {
       return {root: a,length: b,children: c};
    });
-   return _elm.Branch.values = {_op: _op
-                               ,init: init
-                               ,update: update
-                               ,view: view
-                               ,Model: Model};
-};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Branch)</script></body></html>
+   return _elm.Main.values = {_op: _op
+                             ,Model: Model
+                             ,Children: Children
+                             ,Position: Position
+                             ,init: init
+                             ,getChildren: getChildren
+                             ,extractModels: extractModels
+                             ,sproutFrom: sproutFrom
+                             ,Grow: Grow
+                             ,NoOp: NoOp
+                             ,Move: Move
+                             ,Branch: Branch
+                             ,Shrink: Shrink
+                             ,update: update
+                             ,grow: grow
+                             ,shrink: shrink
+                             ,move: move
+                             ,toElmCoordinates: toElmCoordinates
+                             ,branch: branch
+                             ,oneMore: oneMore
+                             ,addToList: addToList
+                             ,actionMailbox: actionMailbox
+                             ,address: address
+                             ,actions: actions
+                             ,fastSignal: fastSignal
+                             ,slowSignal: slowSignal
+                             ,mouseSignal: mouseSignal
+                             ,fastAction: fastAction
+                             ,slowAction: slowAction
+                             ,mouseAction: mouseAction
+                             ,view: view
+                             ,incarnate: incarnate
+                             ,draw: draw
+                             ,trunkPath: trunkPath
+                             ,colorOf: colorOf
+                             ,sizeOf: sizeOf
+                             ,main: main
+                             ,width: width
+                             ,height: height};
+};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>

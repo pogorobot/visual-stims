@@ -1,8 +1,6 @@
 --Animated branching fractals that grow to make you feel good.
 --Be one with nature. Experience your physical form. Branches.
 
-module Branch (Model, init, Action, update, view) where
-
 import Graphics.Element exposing (..)
 import Graphics.Collage exposing (..)
 import Color exposing (..)
@@ -12,19 +10,37 @@ import Mouse exposing (..)
 
 
 --MODEL (SOUTH)
-type alias Model = {root : {x: Float, y : Float}, length : Int, children: Children}
+type alias Model = {root : Position, length : Int, children: Children}
 
 type Children = Children (List Model)
 
+type alias Position = {x: Float, y : Float}
+
 init : Model
 init = { root = {x = 237, y = 42}, length = 1, children = Children [] }
+
+getChildren : Model -> List Model
+getChildren model =
+  extractModels model.children
+
+extractModels : Children -> List Model
+extractModels (Children children) =
+  children
+
+sproutFrom : {x : Float, y: Float} -> Model
+sproutFrom position =
+  { root = position
+  , length = 40
+  , children = Children []
+  }
 
 --UPDATE (WEST)
 
 type Action = Grow
   | NoOp
-  | Move {x : Float, y : Float}
-  | Branch
+  | Move Position
+  | Branch Position
+  | Shrink
 
 update : Action -> Model -> Model
 update action model =
@@ -32,24 +48,40 @@ update action model =
     NoOp -> model
     Grow -> grow model
     Move position -> move model position
-    Branch -> branch model
+    Branch position -> branch model position
+    Shrink -> shrink model
 
 
 grow : Model -> Model
 grow model =
-  { model | length = model.length + 1 }
+  { model | length = model.length + 1, children = Children (List.map grow (getChildren model))  }
+
+shrink : Model -> Model
+shrink model =
+  { model | length = model.length * 2 // 3 }
 
 move : Model -> {x: Float, y: Float} -> Model
 move model position =
   { model | root = toElmCoordinates position }
 
-toElmCoordinates : {x : Float, y : Float} -> {x : Float, y : Float}
+toElmCoordinates : Position -> Position
 toElmCoordinates mouse =
   {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
 
-branch : Model -> Model
-branch model =
-  { model | root = {x = model.root.x / 2, y = model.root.y / 2}}
+branch : Model -> Position -> Model
+branch model position =
+  { model | children = oneMore (model.children, position) }
+
+oneMore : (Children, Position) -> Children
+oneMore (Children children, position) =
+  Children (addToList children position)
+
+addToList : List Model -> Position -> List Model
+addToList childrenList position =
+  List.append childrenList [sproutFrom position]
+
+
+
 
 
 actionMailbox : Mailbox Action
@@ -63,7 +95,7 @@ address =
 actions : Signal Action
 actions =
   Signal.merge
-    fastSignal slowSignal
+    fastSignal mouseSignal
 
 
 fastSignal : Signal Action
@@ -74,6 +106,12 @@ slowSignal : Signal Action
 slowSignal =
   Signal.map slowAction (Time.every (3 * Time.second))
 
+mouseSignal : Signal Action
+mouseSignal =
+  Signal.map mouseAction (Mouse.position)
+
+
+
 
 fastAction : Time -> Action
 fastAction frame =
@@ -81,14 +119,17 @@ fastAction frame =
 
 slowAction : Time -> Action
 slowAction second =
-  Branch
+  Shrink
 
+mouseAction : (Int, Int) -> Action
+mouseAction (x, y) =
+  Branch (toElmCoordinates {x = toFloat x, y = toFloat y})
 
 --VIEW (NORTH)
 
 view : Address Action -> Model -> Element
 view address model =
-  collage width height [incarnate model]
+  collage width height (List.append [incarnate model] (List.map incarnate (getChildren model)))
 
 incarnate : Model -> Form
 incarnate model =
