@@ -58,7 +58,7 @@ grow model =
 
 shrink : Model -> Model
 shrink model =
-  { model | length = model.length * 2 // 3 }
+  { model | length = model.length * 6 // 7, children = Children (List.map shrink (getChildren model)) }
 
 move : Model -> {x: Float, y: Float} -> Model
 move model position =
@@ -94,8 +94,9 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.merge
-    fastSignal mouseSignal
+  Signal.merge slowSignal
+  (Signal.merge
+    fastSignal mouseSignal)
 
 
 fastSignal : Signal Action
@@ -104,7 +105,7 @@ fastSignal =
 
 slowSignal : Signal Action
 slowSignal =
-  Signal.map slowAction (Time.every (3 * Time.second))
+  Signal.map slowAction (Time.every (Time.minute / 63))
 
 mouseSignal : Signal Action
 mouseSignal =

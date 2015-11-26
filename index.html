@@ -6275,14 +6275,11 @@ Elm.Main.make = function (_elm) {
    var move = F2(function (model,position) {
       return _U.update(model,{root: toElmCoordinates(position)});
    });
-   var shrink = function (model) {
-      return _U.update(model,{length: model.length * 2 / 3 | 0});
-   };
    var Shrink = {ctor: "Shrink"};
    var slowAction = function (second) {    return Shrink;};
    var slowSignal = A2($Signal.map,
    slowAction,
-   $Time.every(3 * $Time.second));
+   $Time.every($Time.minute / 63));
    var Branch = function (a) {    return {ctor: "Branch",_0: a};};
    var mouseAction = function (_p0) {
       var _p1 = _p0;
@@ -6297,7 +6294,9 @@ Elm.Main.make = function (_elm) {
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
-   var actions = A2($Signal.merge,fastSignal,mouseSignal);
+   var actions = A2($Signal.merge,
+   slowSignal,
+   A2($Signal.merge,fastSignal,mouseSignal));
    var extractModels = function (_p2) {
       var _p3 = _p2;
       return _p3._0;
@@ -6334,6 +6333,11 @@ Elm.Main.make = function (_elm) {
       return _U.update(model,
       {length: model.length + 1
       ,children: Children(A2($List.map,grow,getChildren(model)))});
+   };
+   var shrink = function (model) {
+      return _U.update(model,
+      {length: model.length * 7 / 8 | 0
+      ,children: Children(A2($List.map,shrink,getChildren(model)))});
    };
    var oneMore = function (_p4) {
       var _p5 = _p4;
