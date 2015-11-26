@@ -1,6 +1,8 @@
 --Animated branching fractals that grow to make you feel good.
 --Be one with nature. Experience your physical form. Branches.
 
+module Branch (Model, init, Action, update, view) where
+
 import Graphics.Element exposing (..)
 import Graphics.Collage exposing (..)
 import Color exposing (..)
@@ -8,11 +10,14 @@ import Time exposing (..)
 import Signal exposing (..)
 import Mouse exposing (..)
 
+
 --MODEL (SOUTH)
-type alias Model = {root : {x: Float, y : Float}, length : Int}
+type alias Model = {root : {x: Float, y : Float}, length : Int, children: Children}
+
+type Children = Children (List Model)
 
 init : Model
-init = { root = {x = 237, y = 1}, length = 1 }
+init = { root = {x = 237, y = 42}, length = 1, children = Children [] }
 
 --UPDATE (WEST)
 

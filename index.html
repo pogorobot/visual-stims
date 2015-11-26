@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Main</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>Branch</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Basics = {};
 Elm.Native.Basics.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -6229,11 +6229,11 @@ Elm.Mouse.make = function (_elm) {
                               ,y: y
                               ,isDown: isDown
                               ,clicks: clicks};
-};Elm.Main = Elm.Main || {};
-Elm.Main.make = function (_elm) {
+};Elm.Branch = Elm.Branch || {};
+Elm.Branch.make = function (_elm) {
    "use strict";
-   _elm.Main = _elm.Main || {};
-   if (_elm.Main.values) return _elm.Main.values;
+   _elm.Branch = _elm.Branch || {};
+   if (_elm.Branch.values) return _elm.Branch.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Color = Elm.Color.make(_elm),
@@ -6308,39 +6308,21 @@ Elm.Main.make = function (_elm) {
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
    var actions = A2($Signal.merge,fastSignal,slowSignal);
-   var init = {root: {x: 237,y: 1},length: 1};
+   var Children = function (a) {
+      return {ctor: "Children",_0: a};
+   };
+   var init = {root: {x: 237,y: 42}
+              ,length: 1
+              ,children: Children(_U.list([]))};
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
-   var Model = F2(function (a,b) {
-      return {root: a,length: b};
+   var Model = F3(function (a,b,c) {
+      return {root: a,length: b,children: c};
    });
-   return _elm.Main.values = {_op: _op
-                             ,Model: Model
-                             ,init: init
-                             ,Grow: Grow
-                             ,NoOp: NoOp
-                             ,Move: Move
-                             ,Branch: Branch
-                             ,update: update
-                             ,grow: grow
-                             ,move: move
-                             ,toElmCoordinates: toElmCoordinates
-                             ,branch: branch
-                             ,actionMailbox: actionMailbox
-                             ,address: address
-                             ,actions: actions
-                             ,fastSignal: fastSignal
-                             ,slowSignal: slowSignal
-                             ,fastAction: fastAction
-                             ,slowAction: slowAction
-                             ,view: view
-                             ,incarnate: incarnate
-                             ,draw: draw
-                             ,trunkPath: trunkPath
-                             ,colorOf: colorOf
-                             ,sizeOf: sizeOf
-                             ,main: main
-                             ,width: width
-                             ,height: height};
-};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>
+   return _elm.Branch.values = {_op: _op
+                               ,init: init
+                               ,update: update
+                               ,view: view
+                               ,Model: Model};
+};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Branch)</script></body></html>
