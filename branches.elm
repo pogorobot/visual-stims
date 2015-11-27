@@ -14,10 +14,14 @@ type alias Model = {root : Position, length : Int, children: Children}
 
 type Children = Children (List Model)
 
-type alias Position = {x: Float, y : Float}
+type alias Position = {x : Float, y : Float}
 
 init : Model
-init = { root = {x = 237, y = 42}, length = 1, children = Children [] }
+init = { root = startingRoot, length = 1, children = Children [] }
+
+startingRoot : Position
+startingRoot =
+  {x = 237, y = 42}
 
 getChildren : Model -> List Model
 getChildren model =
@@ -27,20 +31,20 @@ extractModels : Children -> List Model
 extractModels (Children children) =
   children
 
-sproutFrom : {x : Float, y: Float} -> Model
+sproutFrom : Position -> Model
 sproutFrom position =
   { root = position
-  , length = 40
+  , length = 0
   , children = Children []
   }
 
 --UPDATE (WEST)
 
-type Action = Grow
-  | NoOp
+type Action = NoOp
+  | Grow
+  | Shrink
   | Move Position
   | Branch Position
-  | Shrink
 
 update : Action -> Model -> Model
 update action model =
@@ -54,13 +58,17 @@ update action model =
 
 grow : Model -> Model
 grow model =
-  { model | length = model.length + 1, children = Children (List.map grow (getChildren model))  }
+  { model | length = model.length + 1, children = applyToChildren grow model }
 
 shrink : Model -> Model
 shrink model =
-  { model | length = model.length * 6 // 7, children = Children (List.map shrink (getChildren model)) }
+  { model | length = model.length * 6 // 7, children = applyToChildren shrink model }
 
-move : Model -> {x: Float, y: Float} -> Model
+applyToChildren : (Model -> Model) -> Model -> Children
+applyToChildren applicator model =
+  Children (List.map applicator (getChildren model))
+
+move : Model -> Position -> Model
 move model position =
   { model | root = toElmCoordinates position }
 
@@ -70,19 +78,11 @@ toElmCoordinates mouse =
 
 branch : Model -> Position -> Model
 branch model position =
-  { model | children = oneMore (model.children, position) }
+  { model | children = oneMore ((getChildren model), position) }
 
-oneMore : (Children, Position) -> Children
-oneMore (Children children, position) =
-  Children (addToList children position)
-
-addToList : List Model -> Position -> List Model
-addToList childrenList position =
-  List.append childrenList [sproutFrom position]
-
-
-
-
+oneMore : (List Model, Position) -> Children
+oneMore (children, position) =
+  Children (List.append children [sproutFrom position]) 
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -156,7 +156,7 @@ colorOf model =
 
 sizeOf : Model -> Float
 sizeOf model =
-  toFloat model.length / 2
+  toFloat model.length
 
 
 --MAIN (EAST)

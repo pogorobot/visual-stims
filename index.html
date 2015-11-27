@@ -6250,7 +6250,7 @@ Elm.Main.make = function (_elm) {
    var height = 713;
    var width = 666;
    var sizeOf = function (model) {
-      return $Basics.toFloat(model.length) / 2;
+      return $Basics.toFloat(model.length);
    };
    var colorOf = function (model) {
       return A3($Color.rgb,1,66,42);
@@ -6275,11 +6275,6 @@ Elm.Main.make = function (_elm) {
    var move = F2(function (model,position) {
       return _U.update(model,{root: toElmCoordinates(position)});
    });
-   var Shrink = {ctor: "Shrink"};
-   var slowAction = function (second) {    return Shrink;};
-   var slowSignal = A2($Signal.map,
-   slowAction,
-   $Time.every($Time.minute / 63));
    var Branch = function (a) {    return {ctor: "Branch",_0: a};};
    var mouseAction = function (_p0) {
       var _p1 = _p0;
@@ -6288,15 +6283,20 @@ Elm.Main.make = function (_elm) {
    };
    var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
    var Move = function (a) {    return {ctor: "Move",_0: a};};
-   var NoOp = {ctor: "NoOp"};
-   var actionMailbox = $Signal.mailbox(NoOp);
-   var address = actionMailbox.address;
+   var Shrink = {ctor: "Shrink"};
+   var slowAction = function (second) {    return Shrink;};
+   var slowSignal = A2($Signal.map,
+   slowAction,
+   $Time.every($Time.minute / 63));
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
    var actions = A2($Signal.merge,
    slowSignal,
    A2($Signal.merge,fastSignal,mouseSignal));
+   var NoOp = {ctor: "NoOp"};
+   var actionMailbox = $Signal.mailbox(NoOp);
+   var address = actionMailbox.address;
    var extractModels = function (_p2) {
       var _p3 = _p2;
       return _p3._0;
@@ -6312,41 +6312,42 @@ Elm.Main.make = function (_elm) {
       _U.list([incarnate(model)]),
       A2($List.map,incarnate,getChildren(model))));
    });
+   var startingRoot = {x: 237,y: 42};
    var Position = F2(function (a,b) {    return {x: a,y: b};});
    var Children = function (a) {
       return {ctor: "Children",_0: a};
    };
-   var init = {root: {x: 237,y: 42}
+   var init = {root: startingRoot
               ,length: 1
               ,children: Children(_U.list([]))};
    var sproutFrom = function (position) {
       return {root: position
-             ,length: 40
+             ,length: 0
              ,children: Children(_U.list([]))};
    };
-   var addToList = F2(function (childrenList,position) {
-      return A2($List.append,
-      childrenList,
-      _U.list([sproutFrom(position)]));
+   var applyToChildren = F2(function (applicator,model) {
+      return Children(A2($List.map,applicator,getChildren(model)));
    });
    var grow = function (model) {
       return _U.update(model,
       {length: model.length + 1
-      ,children: Children(A2($List.map,grow,getChildren(model)))});
+      ,children: A2(applyToChildren,grow,model)});
    };
    var shrink = function (model) {
       return _U.update(model,
-      {length: model.length * 7 / 8 | 0
-      ,children: Children(A2($List.map,shrink,getChildren(model)))});
+      {length: model.length * 6 / 7 | 0
+      ,children: A2(applyToChildren,shrink,model)});
    };
    var oneMore = function (_p4) {
       var _p5 = _p4;
-      return Children(A2(addToList,_p5._0._0,_p5._1));
+      return Children(A2($List.append,
+      _p5._0,
+      _U.list([sproutFrom(_p5._1)])));
    };
    var branch = F2(function (model,position) {
       return _U.update(model,
       {children: oneMore({ctor: "_Tuple2"
-                         ,_0: model.children
+                         ,_0: getChildren(model)
                          ,_1: position})});
    });
    var update = F2(function (action,model) {
@@ -6369,22 +6370,23 @@ Elm.Main.make = function (_elm) {
                              ,Children: Children
                              ,Position: Position
                              ,init: init
+                             ,startingRoot: startingRoot
                              ,getChildren: getChildren
                              ,extractModels: extractModels
                              ,sproutFrom: sproutFrom
-                             ,Grow: Grow
                              ,NoOp: NoOp
+                             ,Grow: Grow
+                             ,Shrink: Shrink
                              ,Move: Move
                              ,Branch: Branch
-                             ,Shrink: Shrink
                              ,update: update
                              ,grow: grow
                              ,shrink: shrink
+                             ,applyToChildren: applyToChildren
                              ,move: move
                              ,toElmCoordinates: toElmCoordinates
                              ,branch: branch
                              ,oneMore: oneMore
-                             ,addToList: addToList
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions
