@@ -51,7 +51,7 @@ type Action = NoOp
   | Grow
   | Shrink
   | Move Position
-  | Branch Position
+  | Branch
 
 update : Action -> Model -> Model
 update action model =
@@ -59,7 +59,7 @@ update action model =
     NoOp -> model
     Grow -> grow model
     Move position -> move model position
-    Branch position -> branch model position
+    Branch -> branch model (tip model)
     Shrink -> shrink model
 
 
@@ -127,11 +127,11 @@ fastAction frame =
 
 slowAction : Time -> Action
 slowAction second =
-  Shrink
+  Branch
 
 mouseAction : (Int, Int) -> Action
 mouseAction (x, y) =
-  Branch (toElmCoordinates {x = toFloat x, y = toFloat y})
+  Move ( {x = toFloat x, y = toFloat y})
 
 --VIEW (NORTH)
 
@@ -152,13 +152,20 @@ trunkPath : Model -> Path
 trunkPath model =
   segment 
     (model.root.x, model.root.y) 
-    (tip model)
+    (tip model  |> toScreenCoordinates)
 
-tip : Model -> (Float, Float)
+tip : Model -> Position
 tip model =
-  ( model.root.x + (sizeOf model * cos model.angle)
-  , model.root.y + (sizeOf model * sin model.angle)
+  { x = model.root.x + (sizeOf model * cos model.angle)
+  , y = model.root.y + (sizeOf model * sin model.angle)
+  }
+
+toScreenCoordinates : Position -> (Float, Float)
+toScreenCoordinates position =
+  ( position.x
+  , position.y
   )
+
 
 colorOf : Model -> Color
 colorOf model =

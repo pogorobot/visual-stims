@@ -6255,15 +6255,17 @@ Elm.Main.make = function (_elm) {
    var colorOf = function (model) {
       return A3($Color.rgb,1,66,42);
    };
+   var toScreenCoordinates = function (position) {
+      return {ctor: "_Tuple2",_0: position.x,_1: position.y};
+   };
    var tip = function (model) {
-      return {ctor: "_Tuple2"
-             ,_0: model.root.x + sizeOf(model) * $Basics.cos(model.angle)
-             ,_1: model.root.y + sizeOf(model) * $Basics.sin(model.angle)};
+      return {x: model.root.x + sizeOf(model) * $Basics.cos(model.angle)
+             ,y: model.root.y + sizeOf(model) * $Basics.sin(model.angle)};
    };
    var trunkPath = function (model) {
       return A2($Graphics$Collage.segment,
       {ctor: "_Tuple2",_0: model.root.x,_1: model.root.y},
-      tip(model));
+      toScreenCoordinates(tip(model)));
    };
    var draw = function (model) {
       return $Graphics$Collage.traced($Graphics$Collage.solid(colorOf(model)));
@@ -6278,19 +6280,19 @@ Elm.Main.make = function (_elm) {
    var move = F2(function (model,position) {
       return _U.update(model,{root: toElmCoordinates(position)});
    });
-   var Branch = function (a) {    return {ctor: "Branch",_0: a};};
-   var mouseAction = function (_p0) {
-      var _p1 = _p0;
-      return Branch(toElmCoordinates({x: $Basics.toFloat(_p1._0)
-                                     ,y: $Basics.toFloat(_p1._1)}));
-   };
-   var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
-   var Move = function (a) {    return {ctor: "Move",_0: a};};
-   var Shrink = {ctor: "Shrink"};
-   var slowAction = function (second) {    return Shrink;};
+   var Branch = {ctor: "Branch"};
+   var slowAction = function (second) {    return Branch;};
    var slowSignal = A2($Signal.map,
    slowAction,
    $Time.every($Time.minute / 63));
+   var Move = function (a) {    return {ctor: "Move",_0: a};};
+   var mouseAction = function (_p0) {
+      var _p1 = _p0;
+      return Move({x: $Basics.toFloat(_p1._0)
+                  ,y: $Basics.toFloat(_p1._1)});
+   };
+   var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
+   var Shrink = {ctor: "Shrink"};
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
@@ -6364,7 +6366,7 @@ Elm.Main.make = function (_elm) {
       {case "NoOp": return model;
          case "Grow": return grow(model);
          case "Move": return A2(move,model,_p7._0);
-         case "Branch": return A2(branch,model,_p7._0);
+         case "Branch": return A2(branch,model,tip(model));
          default: return shrink(model);}
    });
    var main = A2($Signal.map,
@@ -6410,6 +6412,7 @@ Elm.Main.make = function (_elm) {
                              ,draw: draw
                              ,trunkPath: trunkPath
                              ,tip: tip
+                             ,toScreenCoordinates: toScreenCoordinates
                              ,colorOf: colorOf
                              ,sizeOf: sizeOf
                              ,main: main
