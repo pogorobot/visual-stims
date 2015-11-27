@@ -6255,12 +6255,15 @@ Elm.Main.make = function (_elm) {
    var colorOf = function (model) {
       return A3($Color.rgb,1,66,42);
    };
+   var tip = function (model) {
+      return {ctor: "_Tuple2"
+             ,_0: model.root.x + sizeOf(model) * $Basics.cos(model.angle)
+             ,_1: model.root.y + sizeOf(model) * $Basics.sin(model.angle)};
+   };
    var trunkPath = function (model) {
       return A2($Graphics$Collage.segment,
       {ctor: "_Tuple2",_0: model.root.x,_1: model.root.y},
-      {ctor: "_Tuple2"
-      ,_0: model.root.x
-      ,_1: model.root.y + sizeOf(model)});
+      tip(model));
    };
    var draw = function (model) {
       return $Graphics$Collage.traced($Graphics$Collage.solid(colorOf(model)));
@@ -6312,6 +6315,10 @@ Elm.Main.make = function (_elm) {
       _U.list([incarnate(model)]),
       A2($List.map,incarnate,getChildren(model))));
    });
+   var direction = function (model) {
+      return {x: $Basics.cos(model.angle)
+             ,y: $Basics.sin(model.angle)};
+   };
    var startingRoot = {x: 237,y: 42};
    var Position = F2(function (a,b) {    return {x: a,y: b};});
    var Children = function (a) {
@@ -6319,12 +6326,14 @@ Elm.Main.make = function (_elm) {
    };
    var init = {root: startingRoot
               ,length: 1
-              ,children: Children(_U.list([]))};
-   var sproutFrom = function (position) {
+              ,children: Children(_U.list([]))
+              ,angle: $Basics.pi / 2};
+   var sproutFrom = F2(function (position,parent) {
       return {root: position
              ,length: 0
-             ,children: Children(_U.list([]))};
-   };
+             ,children: Children(_U.list([]))
+             ,angle: parent.angle + $Basics.pi / 6.5};
+   });
    var applyToChildren = F2(function (applicator,model) {
       return Children(A2($List.map,applicator,getChildren(model)));
    });
@@ -6340,30 +6349,29 @@ Elm.Main.make = function (_elm) {
    };
    var oneMore = function (_p4) {
       var _p5 = _p4;
+      var _p6 = _p5._0;
       return Children(A2($List.append,
-      _p5._0,
-      _U.list([sproutFrom(_p5._1)])));
+      getChildren(_p6),
+      _U.list([A2(sproutFrom,_p5._1,_p6)])));
    };
    var branch = F2(function (model,position) {
       return _U.update(model,
-      {children: oneMore({ctor: "_Tuple2"
-                         ,_0: getChildren(model)
-                         ,_1: position})});
+      {children: oneMore({ctor: "_Tuple2",_0: model,_1: position})});
    });
    var update = F2(function (action,model) {
-      var _p6 = action;
-      switch (_p6.ctor)
+      var _p7 = action;
+      switch (_p7.ctor)
       {case "NoOp": return model;
          case "Grow": return grow(model);
-         case "Move": return A2(move,model,_p6._0);
-         case "Branch": return A2(branch,model,_p6._0);
+         case "Move": return A2(move,model,_p7._0);
+         case "Branch": return A2(branch,model,_p7._0);
          default: return shrink(model);}
    });
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
-   var Model = F3(function (a,b,c) {
-      return {root: a,length: b,children: c};
+   var Model = F4(function (a,b,c,d) {
+      return {root: a,length: b,children: c,angle: d};
    });
    return _elm.Main.values = {_op: _op
                              ,Model: Model
@@ -6371,6 +6379,7 @@ Elm.Main.make = function (_elm) {
                              ,Position: Position
                              ,init: init
                              ,startingRoot: startingRoot
+                             ,direction: direction
                              ,getChildren: getChildren
                              ,extractModels: extractModels
                              ,sproutFrom: sproutFrom
@@ -6400,6 +6409,7 @@ Elm.Main.make = function (_elm) {
                              ,incarnate: incarnate
                              ,draw: draw
                              ,trunkPath: trunkPath
+                             ,tip: tip
                              ,colorOf: colorOf
                              ,sizeOf: sizeOf
                              ,main: main

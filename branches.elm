@@ -10,18 +10,24 @@ import Mouse exposing (..)
 
 
 --MODEL (SOUTH)
-type alias Model = {root : Position, length : Int, children: Children}
+type alias Model = {root : Position, length : Int, children : Children, angle : Radians}
 
 type Children = Children (List Model)
 
 type alias Position = {x : Float, y : Float}
+type alias Radians = Float
+type alias Degrees = Float
 
 init : Model
-init = { root = startingRoot, length = 1, children = Children [] }
+init = { root = startingRoot, length = 1, children = Children [], angle = pi/2 }
 
 startingRoot : Position
 startingRoot =
   {x = 237, y = 42}
+
+direction : Model -> Position
+direction model =
+  {x = cos model.angle, y = sin model.angle}
 
 getChildren : Model -> List Model
 getChildren model =
@@ -31,11 +37,12 @@ extractModels : Children -> List Model
 extractModels (Children children) =
   children
 
-sproutFrom : Position -> Model
-sproutFrom position =
+sproutFrom : Position -> Model -> Model
+sproutFrom position parent =
   { root = position
   , length = 0
   , children = Children []
+  , angle = parent.angle + pi/6.5
   }
 
 --UPDATE (WEST)
@@ -78,11 +85,11 @@ toElmCoordinates mouse =
 
 branch : Model -> Position -> Model
 branch model position =
-  { model | children = oneMore ((getChildren model), position) }
+  { model | children = oneMore (model, position) }
 
-oneMore : (List Model, Position) -> Children
-oneMore (children, position) =
-  Children (List.append children [sproutFrom position]) 
+oneMore : (Model, Position) -> Children
+oneMore (model, position) =
+  Children (List.append (getChildren model) [sproutFrom position model]) 
 
 actionMailbox : Mailbox Action
 actionMailbox =
@@ -135,7 +142,7 @@ view address model =
 incarnate : Model -> Form
 incarnate model =
   trunkPath model
-  |> draw model
+  |> draw model 
 
 draw : Model -> Path -> Form
 draw model =
@@ -145,7 +152,13 @@ trunkPath : Model -> Path
 trunkPath model =
   segment 
     (model.root.x, model.root.y) 
-    (model.root.x, (model.root.y + sizeOf model))
+    (tip model)
+
+tip : Model -> (Float, Float)
+tip model =
+  ( model.root.x + (sizeOf model * cos model.angle)
+  , model.root.y + (sizeOf model * sin model.angle)
+  )
 
 colorOf : Model -> Color
 colorOf model =
