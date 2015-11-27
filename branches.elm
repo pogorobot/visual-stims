@@ -15,6 +15,7 @@ type alias Model =
   , length : Int
   , maxLength : Int
   , children : Children
+  , sproutingLeft : Bool
   , angle : Radians
   }
 
@@ -30,6 +31,7 @@ init =
   , length = 1
   , maxLength = 127
   , children = Children []
+  , sproutingLeft = True
   , angle = pi/2
   }
 
@@ -55,8 +57,16 @@ sproutFrom position parent =
   , length = 0
   , maxLength = parent.maxLength - 10
   , children = Children []
-  , angle = parent.angle + pi/6.5
+  , sproutingLeft = not parent.sproutingLeft
+  , angle = angleToSproutFrom parent
   }
+
+angleToSproutFrom : Model -> Radians
+angleToSproutFrom parent =
+  if parent.sproutingLeft then
+    parent.angle + pi/6.5
+  else
+    parent.angle - pi/6.5
 
 --UPDATE (WEST)
 

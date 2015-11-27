@@ -6299,6 +6299,9 @@ Elm.Main.make = function (_elm) {
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
+   var angleToSproutFrom = function (parent) {
+      return parent.sproutingLeft ? parent.angle + $Basics.pi / 6.5 : parent.angle - $Basics.pi / 6.5;
+   };
    var extractModels = function (_p2) {
       var _p3 = _p2;
       return _p3._0;
@@ -6335,13 +6338,15 @@ Elm.Main.make = function (_elm) {
               ,length: 1
               ,maxLength: 127
               ,children: Children(_U.list([]))
+              ,sproutingLeft: true
               ,angle: $Basics.pi / 2};
    var sproutFrom = F2(function (position,parent) {
       return {root: position
              ,length: 0
              ,maxLength: parent.maxLength - 10
              ,children: Children(_U.list([]))
-             ,angle: parent.angle + $Basics.pi / 6.5};
+             ,sproutingLeft: $Basics.not(parent.sproutingLeft)
+             ,angle: angleToSproutFrom(parent)};
    });
    var applyToChildren = F2(function (applicator,model) {
       return Children(A2($List.map,applicator,getChildren(model)));
@@ -6403,8 +6408,13 @@ Elm.Main.make = function (_elm) {
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
-   var Model = F5(function (a,b,c,d,e) {
-      return {root: a,length: b,maxLength: c,children: d,angle: e};
+   var Model = F6(function (a,b,c,d,e,f) {
+      return {root: a
+             ,length: b
+             ,maxLength: c
+             ,children: d
+             ,sproutingLeft: e
+             ,angle: f};
    });
    return _elm.Main.values = {_op: _op
                              ,Model: Model
@@ -6416,6 +6426,7 @@ Elm.Main.make = function (_elm) {
                              ,getChildren: getChildren
                              ,extractModels: extractModels
                              ,sproutFrom: sproutFrom
+                             ,angleToSproutFrom: angleToSproutFrom
                              ,NoOp: NoOp
                              ,Grow: Grow
                              ,Shrink: Shrink
