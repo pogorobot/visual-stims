@@ -6277,9 +6277,6 @@ Elm.Main.make = function (_elm) {
       return {x: mouse.x - $Basics.toFloat(width) / 2
              ,y: $Basics.toFloat(height) / 2 - mouse.y};
    };
-   var move = F2(function (position,model) {
-      return _U.update(model,{root: toElmCoordinates(position)});
-   });
    var Branch = {ctor: "Branch"};
    var slowAction = function (second) {    return Branch;};
    var slowSignal = A2($Signal.map,
@@ -6296,7 +6293,9 @@ Elm.Main.make = function (_elm) {
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
-   var actions = A2($Signal.merge,slowSignal,fastSignal);
+   var actions = A2($Signal.merge,
+   mouseSignal,
+   A2($Signal.merge,slowSignal,fastSignal));
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
@@ -6359,6 +6358,22 @@ Elm.Main.make = function (_elm) {
       {length: model.length * 6 / 7 | 0
       ,children: A2(applyToChildren,shrink,model)});
    };
+   var moveChildren = F2(function (position,model) {
+      return A2(applyToChildren,
+      A2(moveOffset,model,position),
+      model);
+   });
+   var moveOffset = F3(function (parent,position,child) {
+      return A2(move,
+      {x: child.root.x - parent.root.x + position.x
+      ,y: parent.root.y - child.root.y + position.y},
+      child);
+   });
+   var move = F2(function (position,model) {
+      return _U.update(model,
+      {root: toElmCoordinates(position)
+      ,children: A2(moveChildren,position,model)});
+   });
    var oneMore = F2(function (position,model) {
       return Children(A2($List.append,
       getChildren(model),
@@ -6411,6 +6426,8 @@ Elm.Main.make = function (_elm) {
                              ,shrink: shrink
                              ,applyToChildren: applyToChildren
                              ,move: move
+                             ,moveChildren: moveChildren
+                             ,moveOffset: moveOffset
                              ,toElmCoordinates: toElmCoordinates
                              ,branch: branch
                              ,branchedChildren: branchedChildren

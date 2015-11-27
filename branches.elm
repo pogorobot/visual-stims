@@ -10,7 +10,13 @@ import Mouse exposing (..)
 
 
 --MODEL (SOUTH)
-type alias Model = {root : Position, length : Int, maxLength : Int, children : Children, angle : Radians}
+type alias Model = 
+  { root : Position
+  , length : Int
+  , maxLength : Int
+  , children : Children
+  , angle : Radians
+  }
 
 type Children = Children (List Model)
 
@@ -19,7 +25,13 @@ type alias Radians = Float
 type alias Degrees = Float
 
 init : Model
-init = { root = startingRoot, length = 1, maxLength = 127, children = Children [], angle = pi/2 }
+init = 
+  { root = startingRoot
+  , length = 1
+  , maxLength = 127
+  , children = Children []
+  , angle = pi/2
+  }
 
 startingRoot : Position
 startingRoot =
@@ -81,7 +93,18 @@ applyToChildren applicator model =
 
 move : Position -> Model -> Model
 move position model =
-  { model | root = toElmCoordinates position }--, children = applyToChildren (move position) model }
+  { model | root = toElmCoordinates position, children = moveChildren position model }
+
+moveChildren : Position -> Model -> Children
+moveChildren position model =
+  applyToChildren (moveOffset model position) model
+
+moveOffset : Model -> Position -> Model -> Model
+moveOffset parent position child =
+  move 
+  { x = child.root.x - parent.root.x + position.x
+  , y = parent.root.y - child.root.y + position.y
+  } child
 
 toElmCoordinates : Position -> Position
 toElmCoordinates mouse =
@@ -117,7 +140,8 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.merge slowSignal fastSignal
+  Signal.merge mouseSignal
+    (Signal.merge slowSignal fastSignal)
 
 
 fastSignal : Signal Action
