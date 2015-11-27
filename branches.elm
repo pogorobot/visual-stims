@@ -10,7 +10,7 @@ import Mouse exposing (..)
 
 
 --MODEL (SOUTH)
-type alias Model = {root : Position, length : Int, children : Children, angle : Radians}
+type alias Model = {root : Position, length : Int, maxLength : Int, children : Children, angle : Radians}
 
 type Children = Children (List Model)
 
@@ -19,7 +19,7 @@ type alias Radians = Float
 type alias Degrees = Float
 
 init : Model
-init = { root = startingRoot, length = 1, children = Children [], angle = pi/2 }
+init = { root = startingRoot, length = 1, maxLength = 127, children = Children [], angle = pi/2 }
 
 startingRoot : Position
 startingRoot =
@@ -41,6 +41,7 @@ sproutFrom : Position -> Model -> Model
 sproutFrom position parent =
   { root = position
   , length = 0
+  , maxLength = parent.maxLength - 10
   , children = Children []
   , angle = parent.angle + pi/6.5
   }
@@ -58,14 +59,17 @@ update action model =
   case action of 
     NoOp -> model
     Grow -> grow model
-    Move position -> move model position
-    Branch -> branch model (tip model)
+    Move position -> move position model
+    Branch -> branch model
     Shrink -> shrink model
 
 
 grow : Model -> Model
 grow model =
-  { model | length = model.length + 1, children = applyToChildren grow model }
+  if model.length < model.maxLength then
+    { model | length = model.length + 1, children = applyToChildren grow model }
+  else
+    { model | children = applyToChildren grow model }
 
 shrink : Model -> Model
 shrink model =
@@ -75,20 +79,32 @@ applyToChildren : (Model -> Model) -> Model -> Children
 applyToChildren applicator model =
   Children (List.map applicator (getChildren model))
 
-move : Model -> Position -> Model
-move model position =
-  { model | root = toElmCoordinates position }
+move : Position -> Model -> Model
+move position model =
+  { model | root = toElmCoordinates position }--, children = applyToChildren (move position) model }
 
 toElmCoordinates : Position -> Position
 toElmCoordinates mouse =
   {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
 
-branch : Model -> Position -> Model
-branch model position =
-  { model | children = oneMore (model, position) }
+branch : Model -> Model
+branch model =
+  if model.length < model.maxLength then
+    { model | children = branchedChildren model }
+  else
+    proudParent model
 
-oneMore : (Model, Position) -> Children
-oneMore (model, position) =
+branchedChildren : Model -> Children
+branchedChildren model =
+  proudParent model |>
+  oneMore (tip model)
+
+proudParent : Model -> Model
+proudParent model =
+  { model | children = applyToChildren branch model }
+
+oneMore : Position -> Model -> Children
+oneMore position model =
   Children (List.append (getChildren model) [sproutFrom position model]) 
 
 actionMailbox : Mailbox Action
@@ -101,9 +117,7 @@ address =
 
 actions : Signal Action
 actions =
-  Signal.merge slowSignal
-  (Signal.merge
-    fastSignal mouseSignal)
+  Signal.merge slowSignal fastSignal
 
 
 fastSignal : Signal Action
@@ -112,7 +126,7 @@ fastSignal =
 
 slowSignal : Signal Action
 slowSignal =
-  Signal.map slowAction (Time.every (Time.minute / 63))
+  Signal.map slowAction (Time.every (Time.minute / 72))
 
 mouseSignal : Signal Action
 mouseSignal =
@@ -137,12 +151,21 @@ mouseAction (x, y) =
 
 view : Address Action -> Model -> Element
 view address model =
-  collage width height (List.append [incarnate model] (List.map incarnate (getChildren model)))
+  collage width height (incarnate model)
 
-incarnate : Model -> Form
+incarnate : Model -> List Form
 incarnate model =
+  List.append [drawTrunk model] (incarnateChildren model)
+
+drawTrunk : Model -> Form
+drawTrunk model =
   trunkPath model
-  |> draw model 
+    |> draw model
+
+incarnateChildren : Model -> List Form
+incarnateChildren model =
+  List.map incarnate (getChildren model)
+    |> List.concat
 
 draw : Model -> Path -> Form
 draw model =

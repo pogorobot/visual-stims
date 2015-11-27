@@ -6270,21 +6270,21 @@ Elm.Main.make = function (_elm) {
    var draw = function (model) {
       return $Graphics$Collage.traced($Graphics$Collage.solid(colorOf(model)));
    };
-   var incarnate = function (model) {
+   var drawTrunk = function (model) {
       return A2(draw,model,trunkPath(model));
    };
    var toElmCoordinates = function (mouse) {
       return {x: mouse.x - $Basics.toFloat(width) / 2
              ,y: $Basics.toFloat(height) / 2 - mouse.y};
    };
-   var move = F2(function (model,position) {
+   var move = F2(function (position,model) {
       return _U.update(model,{root: toElmCoordinates(position)});
    });
    var Branch = {ctor: "Branch"};
    var slowAction = function (second) {    return Branch;};
    var slowSignal = A2($Signal.map,
    slowAction,
-   $Time.every($Time.minute / 63));
+   $Time.every($Time.minute / 72));
    var Move = function (a) {    return {ctor: "Move",_0: a};};
    var mouseAction = function (_p0) {
       var _p1 = _p0;
@@ -6296,9 +6296,7 @@ Elm.Main.make = function (_elm) {
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
-   var actions = A2($Signal.merge,
-   slowSignal,
-   A2($Signal.merge,fastSignal,mouseSignal));
+   var actions = A2($Signal.merge,slowSignal,fastSignal);
    var NoOp = {ctor: "NoOp"};
    var actionMailbox = $Signal.mailbox(NoOp);
    var address = actionMailbox.address;
@@ -6309,13 +6307,21 @@ Elm.Main.make = function (_elm) {
    var getChildren = function (model) {
       return extractModels(model.children);
    };
+   var incarnateChildren = function (model) {
+      return $List.concat(A2($List.map,
+      incarnate,
+      getChildren(model)));
+   };
+   var incarnate = function (model) {
+      return A2($List.append,
+      _U.list([drawTrunk(model)]),
+      incarnateChildren(model));
+   };
    var view = F2(function (address,model) {
       return A3($Graphics$Collage.collage,
       width,
       height,
-      A2($List.append,
-      _U.list([incarnate(model)]),
-      A2($List.map,incarnate,getChildren(model))));
+      incarnate(model));
    });
    var direction = function (model) {
       return {x: $Basics.cos(model.angle)
@@ -6328,11 +6334,13 @@ Elm.Main.make = function (_elm) {
    };
    var init = {root: startingRoot
               ,length: 1
+              ,maxLength: 127
               ,children: Children(_U.list([]))
               ,angle: $Basics.pi / 2};
    var sproutFrom = F2(function (position,parent) {
       return {root: position
              ,length: 0
+             ,maxLength: parent.maxLength - 10
              ,children: Children(_U.list([]))
              ,angle: parent.angle + $Basics.pi / 6.5};
    });
@@ -6340,40 +6348,48 @@ Elm.Main.make = function (_elm) {
       return Children(A2($List.map,applicator,getChildren(model)));
    });
    var grow = function (model) {
-      return _U.update(model,
+      return _U.cmp(model.length,
+      model.maxLength) < 0 ? _U.update(model,
       {length: model.length + 1
-      ,children: A2(applyToChildren,grow,model)});
+      ,children: A2(applyToChildren,grow,model)}) : _U.update(model,
+      {children: A2(applyToChildren,grow,model)});
    };
    var shrink = function (model) {
       return _U.update(model,
       {length: model.length * 6 / 7 | 0
       ,children: A2(applyToChildren,shrink,model)});
    };
-   var oneMore = function (_p4) {
-      var _p5 = _p4;
-      var _p6 = _p5._0;
+   var oneMore = F2(function (position,model) {
       return Children(A2($List.append,
-      getChildren(_p6),
-      _U.list([A2(sproutFrom,_p5._1,_p6)])));
-   };
-   var branch = F2(function (model,position) {
-      return _U.update(model,
-      {children: oneMore({ctor: "_Tuple2",_0: model,_1: position})});
+      getChildren(model),
+      _U.list([A2(sproutFrom,position,model)])));
    });
+   var branchedChildren = function (model) {
+      return A2(oneMore,tip(model),proudParent(model));
+   };
+   var proudParent = function (model) {
+      return _U.update(model,
+      {children: A2(applyToChildren,branch,model)});
+   };
+   var branch = function (model) {
+      return _U.cmp(model.length,
+      model.maxLength) < 0 ? _U.update(model,
+      {children: branchedChildren(model)}) : proudParent(model);
+   };
    var update = F2(function (action,model) {
-      var _p7 = action;
-      switch (_p7.ctor)
+      var _p4 = action;
+      switch (_p4.ctor)
       {case "NoOp": return model;
          case "Grow": return grow(model);
-         case "Move": return A2(move,model,_p7._0);
-         case "Branch": return A2(branch,model,tip(model));
+         case "Move": return A2(move,_p4._0,model);
+         case "Branch": return branch(model);
          default: return shrink(model);}
    });
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
-   var Model = F4(function (a,b,c,d) {
-      return {root: a,length: b,children: c,angle: d};
+   var Model = F5(function (a,b,c,d,e) {
+      return {root: a,length: b,maxLength: c,children: d,angle: e};
    });
    return _elm.Main.values = {_op: _op
                              ,Model: Model
@@ -6397,6 +6413,8 @@ Elm.Main.make = function (_elm) {
                              ,move: move
                              ,toElmCoordinates: toElmCoordinates
                              ,branch: branch
+                             ,branchedChildren: branchedChildren
+                             ,proudParent: proudParent
                              ,oneMore: oneMore
                              ,actionMailbox: actionMailbox
                              ,address: address
@@ -6409,6 +6427,8 @@ Elm.Main.make = function (_elm) {
                              ,mouseAction: mouseAction
                              ,view: view
                              ,incarnate: incarnate
+                             ,drawTrunk: drawTrunk
+                             ,incarnateChildren: incarnateChildren
                              ,draw: draw
                              ,trunkPath: trunkPath
                              ,tip: tip
