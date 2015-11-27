@@ -6247,8 +6247,8 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
-   var height = 713;
-   var width = 666;
+   var height = 800;
+   var width = 1600;
    var sizeOf = function (model) {
       return $Basics.toFloat(model.length);
    };
@@ -6345,7 +6345,7 @@ Elm.Main.make = function (_elm) {
              ,length: 0
              ,maxLength: parent.maxLength - 10
              ,children: Children(_U.list([]))
-             ,sproutingLeft: $Basics.not(parent.sproutingLeft)
+             ,sproutingLeft: parent.sproutingLeft
              ,angle: angleToSproutFrom(parent)};
    });
    var applyToChildren = F2(function (applicator,model) {
@@ -6394,7 +6394,8 @@ Elm.Main.make = function (_elm) {
    var branch = function (model) {
       return _U.cmp(model.length,
       model.maxLength) < 0 ? _U.update(model,
-      {children: branchedChildren(model)}) : proudParent(model);
+      {children: branchedChildren(model)
+      ,sproutingLeft: $Basics.not(model.sproutingLeft)}) : proudParent(model);
    };
    var update = F2(function (action,model) {
       var _p4 = action;

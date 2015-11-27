@@ -123,7 +123,7 @@ toElmCoordinates mouse =
 branch : Model -> Model
 branch model =
   if model.length < model.maxLength then
-    { model | children = branchedChildren model }
+    { model | children = branchedChildren model, sproutingLeft = not model.sproutingLeft }
   else
     proudParent model
 
@@ -244,10 +244,10 @@ main =
     (Signal.foldp update init actions)
 
 width : Int
-width = 666
+width = 1000
 
 height : Int
-height = 713
+height = 800
 
 
 
