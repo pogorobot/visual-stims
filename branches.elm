@@ -230,8 +230,8 @@ svgPath model =
 
 controlPoint : Model -> Position
 controlPoint model = 
-  { x = ((model.root.x + (tip model).x) / 2) + (10 * cos model.angle)
-  , y = ((model.root.y + (tip model).y) / 2) - (10 * sin model.angle) 
+  { x = ((model.root.x + (tip model).x) / 2) + ((sizeOf model / 10) * cos model.angle)
+  , y = ((model.root.y + (tip model).y) / 2) - ((sizeOf model / 10) * sin model.angle) 
   }
 
 svgFormat : Position -> String
