@@ -1,6 +1,4 @@
-# Visual Stims
-
-[Demo](http://pogorobot.github.io/visual-stims/)
+# Visual Stims - [Demo](http://pogorobot.github.io/visual-stims/)
 
 Sometimes it's nice to watch the patterns dance,  
 To grow and change their structure and their heart.  
