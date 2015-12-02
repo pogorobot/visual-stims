@@ -7,6 +7,9 @@ import Color exposing (..)
 import Time exposing (..)
 import Signal exposing (..)
 import Mouse exposing (..)
+import Html exposing (..)
+import Svg exposing (..)
+import Svg.Attributes exposing (..)
 
 
 --MODEL (SOUTH)
@@ -183,33 +186,86 @@ mouseAction (x, y) =
 
 --VIEW (NORTH)
 
-view : Address Action -> Model -> Element
+view : Address Action -> Model -> Html
 view address model =
-  collage width height (incarnate model)
+  Svg.svg 
+    [ Svg.Attributes.height (toString height), Svg.Attributes.width (toString width)]--, Svg.Attributes.viewBox "0 0 2000 2000"]
+    ( incarnate model )
 
-incarnate : Model -> List Form
+--roundRect : Html.Html
+--roundRect =
+--    svg
+--      [ width "120", height "120", viewBox "0 0 120 120" ]
+--      [ rect [ x "10", y "10", width "100", height "100", rx "15", ry "15" ] [] ]
+
+incarnate : Model -> List Svg
 incarnate model =
-  List.append [drawTrunk model] (incarnateChildren model)
+  List.append [shapeOf model] (incarnateChildren model)
 
-drawTrunk : Model -> Form
-drawTrunk model =
-  trunkPath model
-    |> draw model
-
-incarnateChildren : Model -> List Form
+incarnateChildren : Model -> List Svg
 incarnateChildren model =
   List.map incarnate (getChildren model)
     |> List.concat
 
-draw : Model -> Path -> Form
-draw model =
-  colorOf model |> solid |> traced
+--drawTrunk : Model -> Form
+--drawTrunk model =
+--  trunkPath model
+--    |> draw model
 
-trunkPath : Model -> Path
-trunkPath model =
-  segment 
-    (model.root.x, model.root.y) 
-    (tip model  |> toScreenCoordinates)
+
+
+shapeOf : Model -> Svg
+shapeOf model =
+  Svg.path 
+    [d (svgPath model), stroke "green", strokeWidth "1", fill "none"]
+    []
+
+svgPath : Model -> String
+svgPath model =
+  "M"
+    ++ (model.root |> svgFormat)
+    ++ " Q" 
+    ++ (controlPoint model |> svgFormat)
+    ++ " " ++ (tip model |> svgFormat)
+
+controlPoint : Model -> Position
+controlPoint model = 
+  { x = ((model.root.x + (tip model).x) / 2) + (10 * sin model.angle)
+  , y = ((model.root.y + (tip model).y) / 2) + (10 * cos model.angle)
+  }
+
+svgFormat : Position -> String
+svgFormat position =
+  toString (toHtmlCoordinates position).x ++ "," ++ toString (toHtmlCoordinates position).y
+
+--view : Address Action -> Model -> Element
+--view address model =
+--  collage width height (incarnate model)
+
+--incarnate : Model -> List Form
+--incarnate model =
+--  List.append [drawTrunk model] (incarnateChildren model)
+
+
+--drawTrunk : Model -> Form
+--drawTrunk model =
+--  trunkPath model
+--    |> draw model
+
+--incarnateChildren : Model -> List Form
+--incarnateChildren model =
+--  List.map incarnate (getChildren model)
+--    |> List.concat
+
+--draw : Model -> Path -> Form
+--draw model =
+--  colorOf model |> solid |> traced
+
+--trunkPath : Model -> Path
+--trunkPath model =
+--  segment 
+--    (model.root.x, model.root.y) 
+--    (tip model  |> toScreenCoordinates)
 
 tip : Model -> Position
 tip model =
@@ -223,6 +279,31 @@ toScreenCoordinates position =
   , position.y
   )
 
+toHtmlCoordinates : Position -> Position
+toHtmlCoordinates position =
+  { x = position.x + toFloat width / 2
+  , y = toFloat height / 2 - position.y
+  }
+
+svgColor : Color -> String
+svgColor color =
+  svgColor' (toRgb color)
+
+svgColor' : { red: Int, green : Int, blue: Int, alpha : Float } -> String
+svgColor' color =
+  "#" ++ toHex color.red ++ toHex color.green ++ toHex color.blue
+
+toHex : Int -> String
+toHex number =
+  toString (digitize (number // 16))
+  ++ toString (digitize (number % 16))
+
+digitize : Int -> String
+digitize number =
+  if number < 10 then
+    toString number
+  else
+    Maybe.withDefault "X" (List.head (List.drop (number - 10) ["A", "B", "C", "D", "E", "F"]))
 
 colorOf : Model -> Color
 colorOf model =
@@ -238,7 +319,7 @@ sizeOf model =
 
 --MAIN (EAST)
 
-main : Signal Element
+main : Signal Html
 main =
   Signal.map (view address)
     (Signal.foldp update init actions)
