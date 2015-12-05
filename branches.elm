@@ -91,14 +91,33 @@ update action model =
 
 grow : Model -> Model
 grow model =
-  if model.length < model.maxLength then
-    { model | length = model.length + 1, children = applyToChildren grow model }
+  if (canGrow model) then
+    { model | length = grown model.length, children = applyToChildren grow model }
   else
     { model | children = applyToChildren grow model }
 
+grown : Int -> Int
+grown length =
+  length + 1
+
+canGrow : Model -> Bool
+canGrow model =
+  model.length < model.maxLength
+
 shrink : Model -> Model
 shrink model =
-  { model | length = model.length * 6 // 7, children = applyToChildren shrink model }
+  if (canShrink model) then
+    { model | length = shrunk model.length, children = applyToChildren shrink model }
+  else
+    { model | children = applyToChildren shrink model }
+
+shrunk : Int -> Int
+shrunk length =
+  length * 6 // 7
+
+canShrink : Model -> Bool
+canShrink model =
+  True
 
 applyToChildren : (Model -> Model) -> Model -> Children
 applyToChildren applicator model =
@@ -169,9 +188,6 @@ mouseSignal : Signal Action
 mouseSignal =
   Signal.map mouseAction (Mouse.position)
 
-
-
-
 fastAction : Time -> Action
 fastAction frame =
   Grow
@@ -192,12 +208,6 @@ view address model =
     [ Svg.Attributes.height (toString height), Svg.Attributes.width (toString width)]--, Svg.Attributes.viewBox "0 0 2000 2000"]
     ( incarnate model )
 
---roundRect : Html.Html
---roundRect =
---    svg
---      [ width "120", height "120", viewBox "0 0 120 120" ]
---      [ rect [ x "10", y "10", width "100", height "100", rx "15", ry "15" ] [] ]
-
 incarnate : Model -> List Svg
 incarnate model =
   List.append [shapeOf model] (incarnateChildren model)
@@ -206,13 +216,6 @@ incarnateChildren : Model -> List Svg
 incarnateChildren model =
   List.map incarnate (getChildren model)
     |> List.concat
-
---drawTrunk : Model -> Form
---drawTrunk model =
---  trunkPath model
---    |> draw model
-
-
 
 shapeOf : Model -> Svg
 shapeOf model =
@@ -237,35 +240,6 @@ controlPoint model =
 svgFormat : Position -> String
 svgFormat position =
   toString (toHtmlCoordinates position).x ++ "," ++ toString (toHtmlCoordinates position).y
-
---view : Address Action -> Model -> Element
---view address model =
---  collage width height (incarnate model)
-
---incarnate : Model -> List Form
---incarnate model =
---  List.append [drawTrunk model] (incarnateChildren model)
-
-
---drawTrunk : Model -> Form
---drawTrunk model =
---  trunkPath model
---    |> draw model
-
---incarnateChildren : Model -> List Form
---incarnateChildren model =
---  List.map incarnate (getChildren model)
---    |> List.concat
-
---draw : Model -> Path -> Form
---draw model =
---  colorOf model |> solid |> traced
-
---trunkPath : Model -> Path
---trunkPath model =
---  segment 
---    (model.root.x, model.root.y) 
---    (tip model  |> toScreenCoordinates)
 
 tip : Model -> Position
 tip model =
@@ -316,7 +290,6 @@ sizeOf : Model -> Float
 sizeOf model =
   toFloat model.length
 
-
 --MAIN (EAST)
 
 main : Signal Html
@@ -329,9 +302,6 @@ width = 1000
 
 height : Int
 height = 800
-
-
-
 
 --(UNTIL THE EAST SHALL RISE)
 --(AND ILLUMINATE ALL BEINGS)
