@@ -11855,22 +11855,40 @@ Elm.Main.make = function (_elm) {
               ,$Svg$Attributes.fill("none")]),
       _U.list([]));
    };
+   var accelerate = F2(function (direction,model) {
+      return model;
+   });
+   var rotated = F2(function (position,model) {
+      return A2($Basics.atan2,
+      position.y - model.root.y,
+      position.x - model.root.x);
+   });
    var toElmCoordinates = function (mouse) {
       return {x: mouse.x - $Basics.toFloat(width) / 2
              ,y: $Basics.toFloat(height) / 2 - mouse.y};
    };
+   var canShrink = function (model) {    return true;};
+   var shrunk = function (length) {    return length * 6 / 7 | 0;};
+   var canGrow = function (model) {
+      return _U.cmp(model.length,model.maxLength) < 0;
+   };
+   var grown = function (length) {    return length + 1;};
+   var Accelerate = function (a) {
+      return {ctor: "Accelerate",_0: a};
+   };
+   var Rotate = function (a) {    return {ctor: "Rotate",_0: a};};
+   var mouseAction = function (_p0) {
+      var _p1 = _p0;
+      return Rotate(toElmCoordinates({x: $Basics.toFloat(_p1._0)
+                                     ,y: $Basics.toFloat(_p1._1)}));
+   };
+   var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
    var Branch = {ctor: "Branch"};
    var slowAction = function (second) {    return Branch;};
    var slowSignal = A2($Signal.map,
    slowAction,
    $Time.every($Time.minute / 72));
    var Move = function (a) {    return {ctor: "Move",_0: a};};
-   var mouseAction = function (_p0) {
-      var _p1 = _p0;
-      return Move({x: $Basics.toFloat(_p1._0)
-                  ,y: $Basics.toFloat(_p1._1)});
-   };
-   var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
    var Shrink = {ctor: "Shrink"};
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
@@ -11934,16 +11952,16 @@ Elm.Main.make = function (_elm) {
       return Children(A2($List.map,applicator,getChildren(model)));
    });
    var grow = function (model) {
-      return _U.cmp(model.length,
-      model.maxLength) < 0 ? _U.update(model,
-      {length: model.length + 1
+      return canGrow(model) ? _U.update(model,
+      {length: grown(model.length)
       ,children: A2(applyToChildren,grow,model)}) : _U.update(model,
       {children: A2(applyToChildren,grow,model)});
    };
    var shrink = function (model) {
-      return _U.update(model,
-      {length: model.length * 6 / 7 | 0
-      ,children: A2(applyToChildren,shrink,model)});
+      return canShrink(model) ? _U.update(model,
+      {length: shrunk(model.length)
+      ,children: A2(applyToChildren,shrink,model)}) : _U.update(model,
+      {children: A2(applyToChildren,shrink,model)});
    };
    var moveChildren = F2(function (position,model) {
       return A2(applyToChildren,
@@ -11960,6 +11978,11 @@ Elm.Main.make = function (_elm) {
       return _U.update(model,
       {root: toElmCoordinates(position)
       ,children: A2(moveChildren,position,model)});
+   });
+   var rotate = F2(function (position,model) {
+      return _U.update(model,
+      {angle: A2(rotated,position,model)
+      ,children: A2(applyToChildren,rotate(position),model)});
    });
    var oneMore = F2(function (position,model) {
       return Children(A2($List.append,
@@ -11986,7 +12009,9 @@ Elm.Main.make = function (_elm) {
          case "Grow": return grow(model);
          case "Move": return A2(move,_p4._0,model);
          case "Branch": return branch(model);
-         default: return shrink(model);}
+         case "Shrink": return shrink(model);
+         case "Rotate": return A2(rotate,_p4._0,model);
+         default: return A2(accelerate,_p4._0,model);}
    });
    var main = A2($Signal.map,
    view(address),
@@ -12015,9 +12040,15 @@ Elm.Main.make = function (_elm) {
                              ,Shrink: Shrink
                              ,Move: Move
                              ,Branch: Branch
+                             ,Rotate: Rotate
+                             ,Accelerate: Accelerate
                              ,update: update
                              ,grow: grow
+                             ,grown: grown
+                             ,canGrow: canGrow
                              ,shrink: shrink
+                             ,shrunk: shrunk
+                             ,canShrink: canShrink
                              ,applyToChildren: applyToChildren
                              ,move: move
                              ,moveChildren: moveChildren
@@ -12027,6 +12058,9 @@ Elm.Main.make = function (_elm) {
                              ,branchedChildren: branchedChildren
                              ,proudParent: proudParent
                              ,oneMore: oneMore
+                             ,rotate: rotate
+                             ,rotated: rotated
+                             ,accelerate: accelerate
                              ,actionMailbox: actionMailbox
                              ,address: address
                              ,actions: actions

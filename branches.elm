@@ -78,6 +78,8 @@ type Action = NoOp
   | Shrink
   | Move Position
   | Branch
+  | Rotate Position
+  | Accelerate Position
 
 update : Action -> Model -> Model
 update action model =
@@ -87,6 +89,8 @@ update action model =
     Move position -> move position model
     Branch -> branch model
     Shrink -> shrink model
+    Rotate position -> rotate position model
+    Accelerate position -> accelerate position model
 
 
 grow : Model -> Model
@@ -162,6 +166,19 @@ oneMore : Position -> Model -> Children
 oneMore position model =
   Children (List.append (getChildren model) [sproutFrom position model]) 
 
+rotate : Position -> Model -> Model
+rotate position model =
+  { model | angle = rotated position model, children = applyToChildren (rotate position) model}
+
+rotated : Position -> Model -> Radians
+rotated position model = 
+  (atan2 (position.y - model.root.y) (position.x - model.root.x))
+
+
+accelerate : Position -> Model -> Model
+accelerate direction model =
+  model
+
 actionMailbox : Mailbox Action
 actionMailbox =
   Signal.mailbox NoOp
@@ -198,7 +215,7 @@ slowAction second =
 
 mouseAction : (Int, Int) -> Action
 mouseAction (x, y) =
-  Move ( {x = toFloat x, y = toFloat y})
+  Rotate ( toElmCoordinates {x = toFloat x, y = toFloat y})
 
 --VIEW (NORTH)
 
