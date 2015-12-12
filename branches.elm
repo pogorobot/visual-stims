@@ -176,8 +176,8 @@ rotated position model =
 
 rotateChildOf : Model -> Position -> Model -> Model
 rotateChildOf parent position child =
-  { child | angle = child.angle - parent.angle - (rotated position child)
-  , children = applyToChildren (rotateChildOf child position) child
+  { child | angle = child.angle - parent.angle + (rotated position parent)
+  , children = applyToChildren (rotateChildOf parent position) child
   }
 
 

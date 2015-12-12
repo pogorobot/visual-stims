@@ -11981,9 +11981,9 @@ Elm.Main.make = function (_elm) {
    });
    var rotateChildOf = F3(function (parent,position,child) {
       return _U.update(child,
-      {angle: child.angle - parent.angle - A2(rotated,position,child)
+      {angle: child.angle - parent.angle + A2(rotated,position,parent)
       ,children: A2(applyToChildren,
-      A2(rotateChildOf,child,position),
+      A2(rotateChildOf,parent,position),
       child)});
    });
    var rotate = F2(function (position,model) {
