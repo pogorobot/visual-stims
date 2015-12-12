@@ -176,7 +176,9 @@ rotated position model =
 
 rotateChildOf : Model -> Position -> Model -> Model
 rotateChildOf parent position child =
-  { child | angle = (rotated {x = position.x + child.root.x - parent.root.x, y = position.y + child.root.y - parent.root.y } child), children = applyToChildren (rotateChildOf child position) child}
+  { child | angle = child.angle - parent.angle - (rotated position child)
+  , children = applyToChildren (rotateChildOf child position) child
+  }
 
 
 accelerate : Position -> Model -> Model

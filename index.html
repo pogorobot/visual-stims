@@ -11979,10 +11979,19 @@ Elm.Main.make = function (_elm) {
       {root: toElmCoordinates(position)
       ,children: A2(moveChildren,position,model)});
    });
+   var rotateChildOf = F3(function (parent,position,child) {
+      return _U.update(child,
+      {angle: child.angle - parent.angle - A2(rotated,position,child)
+      ,children: A2(applyToChildren,
+      A2(rotateChildOf,child,position),
+      child)});
+   });
    var rotate = F2(function (position,model) {
       return _U.update(model,
       {angle: A2(rotated,position,model)
-      ,children: A2(applyToChildren,rotate(position),model)});
+      ,children: A2(applyToChildren,
+      A2(rotateChildOf,model,position),
+      model)});
    });
    var oneMore = F2(function (position,model) {
       return Children(A2($List.append,
@@ -12060,6 +12069,7 @@ Elm.Main.make = function (_elm) {
                              ,oneMore: oneMore
                              ,rotate: rotate
                              ,rotated: rotated
+                             ,rotateChildOf: rotateChildOf
                              ,accelerate: accelerate
                              ,actionMailbox: actionMailbox
                              ,address: address
