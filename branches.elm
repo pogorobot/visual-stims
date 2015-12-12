@@ -168,11 +168,15 @@ oneMore position model =
 
 rotate : Position -> Model -> Model
 rotate position model =
-  { model | angle = rotated position model, children = applyToChildren (rotate position) model}
+  { model | angle = rotated position model, children = applyToChildren (rotateChildOf model position) model}
 
 rotated : Position -> Model -> Radians
 rotated position model = 
   (atan2 (position.y - model.root.y) (position.x - model.root.x))
+
+rotateChildOf : Model -> Position -> Model -> Model
+rotateChildOf parent position child =
+  { child | angle = (rotated {x = position.x + child.root.x - parent.root.x, y = position.y + child.root.y - parent.root.y } child), children = applyToChildren (rotateChildOf child position) child}
 
 
 accelerate : Position -> Model -> Model
