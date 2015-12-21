@@ -40,7 +40,7 @@ init =
 
 startingRoot : Position
 startingRoot =
-  {x = 237, y = 42}
+  {x = 0, y = 0}
 
 direction : Model -> Position
 direction model =
