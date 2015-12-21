@@ -13,27 +13,27 @@ import Svg.Attributes exposing (..)
 
 
 --MODEL (SOUTH)
-type alias Model = 
+type alias Tree = 
   { root : Position
   , length : Int
   , maxLength : Int
-  , children : Children
+  , branches : Branches
   , sproutingLeft : Bool
   , angle : Radians
   }
 
-type Children = Children (List Model)
+type Branches = Branches (List Tree)
 
 type alias Position = {x : Float, y : Float}
 type alias Radians = Float
 type alias Degrees = Float
 
-init : Model
+init : Tree
 init = 
   { root = startingRoot
   , length = 1
   , maxLength = 127
-  , children = Children []
+  , branches = Branches []
   , sproutingLeft = True
   , angle = pi/2
   }
@@ -42,29 +42,29 @@ startingRoot : Position
 startingRoot =
   {x = 0, y = -(toFloat height) / 2}
 
-direction : Model -> Position
+direction : Tree -> Position
 direction model =
   {x = cos model.angle, y = sin model.angle}
 
-getChildren : Model -> List Model
-getChildren model =
-  extractModels model.children
+getBranches : Tree -> List Tree
+getBranches model =
+  extractTrees model.branches
 
-extractModels : Children -> List Model
-extractModels (Children children) =
-  children
+extractTrees : Branches -> List Tree
+extractTrees (Branches branches) =
+  branches
 
-sproutFrom : Position -> Model -> Model
+sproutFrom : Position -> Tree -> Tree
 sproutFrom position parent =
   { root = position
   , length = 0
   , maxLength = parent.maxLength - 10
-  , children = Children []
+  , branches = Branches []
   , sproutingLeft = not parent.sproutingLeft
   , angle = angleToSproutFrom parent
   }
 
-angleToSproutFrom : Model -> Radians
+angleToSproutFrom : Tree -> Radians
 angleToSproutFrom parent =
   if parent.sproutingLeft then
     parent.angle + pi/6.5
@@ -75,67 +75,67 @@ angleToSproutFrom parent =
 
 type Action = NoOp
   | Grow
-  | Shrink
-  | Move Position
   | Branch
-  | Rotate Position
-  | Accelerate Position
+  | GrowTowards Position
 
-update : Action -> Model -> Model
+update : Action -> Tree -> Tree
 update action model =
   case action of 
     NoOp -> model
     Grow -> grow model
-    Move position -> move position model
     Branch -> branch model
-    Shrink -> shrink model
-    Rotate position -> rotate position model
-    Accelerate position -> accelerate position model
+    GrowTowards position -> growTowards position model
 
-
-grow : Model -> Model
+grow : Tree -> Tree
 grow model =
   if (canGrow model) then
-    { model | length = grown model.length, children = applyToChildren grow model }
+    { model | length = grown model.length, branches = applyToBranches grow model }
   else
-    { model | children = applyToChildren grow model }
+    { model | branches = applyToBranches grow model }
 
 grown : Int -> Int
 grown length =
   length + 1
 
-canGrow : Model -> Bool
+canGrow : Tree -> Bool
 canGrow model =
   model.length < model.maxLength
 
-shrink : Model -> Model
+growTowards : Position -> Tree -> Tree
+growTowards sun tree =
+  if (canGrow tree) then
+    rotate sun tree
+  else
+    { tree | branches = applyToBranches (growTowards sun) tree }
+
+shrink : Tree -> Tree
 shrink model =
   if (canShrink model) then
-    { model | length = shrunk model.length, children = applyToChildren shrink model }
+    { model | length = shrunk model.length, branches = applyToBranches shrink model }
   else
-    { model | children = applyToChildren shrink model }
+    { model | branches = applyToBranches shrink model }
 
 shrunk : Int -> Int
 shrunk length =
   length * 6 // 7
 
-canShrink : Model -> Bool
+canShrink : Tree -> Bool
 canShrink model =
   True
 
-applyToChildren : (Model -> Model) -> Model -> Children
-applyToChildren applicator model =
-  Children (List.map applicator (getChildren model))
+applyToBranches : (Tree -> Tree) -> Tree -> Branches
+applyToBranches applicator model =
+  Branches (List.map applicator (getBranches model))
 
-move : Position -> Model -> Model
+move : Position -> Tree -> Tree
 move position model =
-  { model | root = toElmCoordinates position, children = moveChildren position model }
+  { model | root = toElmCoordinates position, branches = moveBranches position model }
 
-moveChildren : Position -> Model -> Children
-moveChildren position model =
-  applyToChildren (moveOffset model position) model
+moveBranches : Position -> Tree -> Branches
+moveBranches position model =
+  applyToBranches (moveOffset model position) model
 
-moveOffset : Model -> Position -> Model -> Model
+moveOffset : Tree -> Position -> Tree -> Tree
 moveOffset parent position child =
   move 
   { x = child.root.x - parent.root.x + position.x
@@ -146,42 +146,42 @@ toElmCoordinates : Position -> Position
 toElmCoordinates mouse =
   {x = mouse.x - toFloat width / 2, y = toFloat height / 2 - mouse.y}
 
-branch : Model -> Model
+branch : Tree -> Tree
 branch model =
   if model.length < model.maxLength then
-    { model | children = branchedChildren model, sproutingLeft = not model.sproutingLeft }
+    { model | branches = branchedBranches model, sproutingLeft = not model.sproutingLeft }
   else
     proudParent model
 
-branchedChildren : Model -> Children
-branchedChildren model =
+branchedBranches : Tree -> Branches
+branchedBranches model =
   proudParent model |>
   oneMore (tip model)
 
-proudParent : Model -> Model
+proudParent : Tree -> Tree
 proudParent model =
-  { model | children = applyToChildren branch model }
+  { model | branches = applyToBranches branch model }
 
-oneMore : Position -> Model -> Children
+oneMore : Position -> Tree -> Branches
 oneMore position model =
-  Children (List.append (getChildren model) [sproutFrom position model]) 
+  Branches (List.append (getBranches model) [sproutFrom position model]) 
 
-rotate : Position -> Model -> Model
+rotate : Position -> Tree -> Tree
 rotate position model =
-  { model | angle = rotated position model, children = applyToChildren (rotateChildOf model position) model}
+  { model | angle = rotated position model, branches = applyToBranches (rotateChildOf model position) model}
 
-rotated : Position -> Model -> Radians
+rotated : Position -> Tree -> Radians
 rotated position model = 
   (atan2 (position.y - model.root.y) (position.x - model.root.x))
 
-rotateChildOf : Model -> Position -> Model -> Model
+rotateChildOf : Tree -> Position -> Tree -> Tree
 rotateChildOf parent position child =
   { child | angle = child.angle - parent.angle + (rotated position parent)
-  , children = applyToChildren (rotateChildOf parent position) child
+  , branches = applyToBranches (rotateChildOf parent position) child
   }
 
 
-accelerate : Position -> Model -> Model
+accelerate : Position -> Tree -> Tree
 accelerate direction model =
   model
 
@@ -221,32 +221,32 @@ slowAction second =
 
 mouseAction : (Int, Int) -> Action
 mouseAction (x, y) =
-  Rotate ( toElmCoordinates {x = toFloat x, y = toFloat y})
+  GrowTowards ( toElmCoordinates {x = toFloat x, y = toFloat y})
 
 --VIEW (NORTH)
 
-view : Address Action -> Model -> Html
+view : Address Action -> Tree -> Html
 view address model =
   Svg.svg 
     [ Svg.Attributes.height (toString height), Svg.Attributes.width (toString width)]--, Svg.Attributes.viewBox "0 0 2000 2000"]
     ( incarnate model )
 
-incarnate : Model -> List Svg
+incarnate : Tree -> List Svg
 incarnate model =
-  List.append [shapeOf model] (incarnateChildren model)
+  List.append [shapeOf model] (incarnateBranches model)
 
-incarnateChildren : Model -> List Svg
-incarnateChildren model =
-  List.map incarnate (getChildren model)
+incarnateBranches : Tree -> List Svg
+incarnateBranches model =
+  List.map incarnate (getBranches model)
     |> List.concat
 
-shapeOf : Model -> Svg
+shapeOf : Tree -> Svg
 shapeOf model =
   Svg.path 
     [d (svgPath model), stroke "green", strokeWidth "1", fill "none"]
     []
 
-svgPath : Model -> String
+svgPath : Tree -> String
 svgPath model =
   "M"
     ++ (model.root |> svgFormat)
@@ -254,7 +254,7 @@ svgPath model =
     ++ (controlPoint model |> svgFormat)
     ++ " " ++ (tip model |> svgFormat)
 
-controlPoint : Model -> Position
+controlPoint : Tree -> Position
 controlPoint model = 
   { x = ((model.root.x + (tip model).x) / 2) + ((sizeOf model / 10) * cos model.angle)
   , y = ((model.root.y + (tip model).y) / 2) - ((sizeOf model / 10) * sin model.angle) 
@@ -264,7 +264,7 @@ svgFormat : Position -> String
 svgFormat position =
   toString (toHtmlCoordinates position).x ++ "," ++ toString (toHtmlCoordinates position).y
 
-tip : Model -> Position
+tip : Tree -> Position
 tip model =
   { x = model.root.x + (sizeOf model * cos model.angle)
   , y = model.root.y + (sizeOf model * sin model.angle)
@@ -302,14 +302,14 @@ digitize number =
   else
     Maybe.withDefault "X" (List.head (List.drop (number - 10) ["A", "B", "C", "D", "E", "F"]))
 
-colorOf : Model -> Color
+colorOf : Tree -> Color
 colorOf model =
   rgb 
     (1)
     (66)
     (42)
 
-sizeOf : Model -> Float
+sizeOf : Tree -> Float
 sizeOf model =
   toFloat model.length
 

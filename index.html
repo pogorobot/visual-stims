@@ -11873,14 +11873,13 @@ Elm.Main.make = function (_elm) {
       return _U.cmp(model.length,model.maxLength) < 0;
    };
    var grown = function (length) {    return length + 1;};
-   var Accelerate = function (a) {
-      return {ctor: "Accelerate",_0: a};
+   var GrowTowards = function (a) {
+      return {ctor: "GrowTowards",_0: a};
    };
-   var Rotate = function (a) {    return {ctor: "Rotate",_0: a};};
    var mouseAction = function (_p0) {
       var _p1 = _p0;
-      return Rotate(toElmCoordinates({x: $Basics.toFloat(_p1._0)
-                                     ,y: $Basics.toFloat(_p1._1)}));
+      return GrowTowards(toElmCoordinates({x: $Basics.toFloat(_p1._0)
+                                          ,y: $Basics.toFloat(_p1._1)}));
    };
    var mouseSignal = A2($Signal.map,mouseAction,$Mouse.position);
    var Branch = {ctor: "Branch"};
@@ -11888,8 +11887,6 @@ Elm.Main.make = function (_elm) {
    var slowSignal = A2($Signal.map,
    slowAction,
    $Time.every($Time.minute / 72));
-   var Move = function (a) {    return {ctor: "Move",_0: a};};
-   var Shrink = {ctor: "Shrink"};
    var Grow = {ctor: "Grow"};
    var fastAction = function (frame) {    return Grow;};
    var fastSignal = A2($Signal.map,fastAction,$Time.fps(42));
@@ -11902,22 +11899,22 @@ Elm.Main.make = function (_elm) {
    var angleToSproutFrom = function (parent) {
       return parent.sproutingLeft ? parent.angle + $Basics.pi / 6.5 : parent.angle - $Basics.pi / 6.5;
    };
-   var extractModels = function (_p2) {
+   var extractTrees = function (_p2) {
       var _p3 = _p2;
       return _p3._0;
    };
-   var getChildren = function (model) {
-      return extractModels(model.children);
+   var getBranches = function (model) {
+      return extractTrees(model.branches);
    };
-   var incarnateChildren = function (model) {
+   var incarnateBranches = function (model) {
       return $List.concat(A2($List.map,
       incarnate,
-      getChildren(model)));
+      getBranches(model)));
    };
    var incarnate = function (model) {
       return A2($List.append,
       _U.list([shapeOf(model)]),
-      incarnateChildren(model));
+      incarnateBranches(model));
    };
    var view = F2(function (address,model) {
       return A2($Svg.svg,
@@ -11929,42 +11926,42 @@ Elm.Main.make = function (_elm) {
       return {x: $Basics.cos(model.angle)
              ,y: $Basics.sin(model.angle)};
    };
-   var startingRoot = {x: 237,y: 42};
+   var startingRoot = {x: 0,y: (0 - $Basics.toFloat(height)) / 2};
    var Position = F2(function (a,b) {    return {x: a,y: b};});
-   var Children = function (a) {
-      return {ctor: "Children",_0: a};
+   var Branches = function (a) {
+      return {ctor: "Branches",_0: a};
    };
    var init = {root: startingRoot
               ,length: 1
               ,maxLength: 127
-              ,children: Children(_U.list([]))
+              ,branches: Branches(_U.list([]))
               ,sproutingLeft: true
               ,angle: $Basics.pi / 2};
    var sproutFrom = F2(function (position,parent) {
       return {root: position
              ,length: 0
              ,maxLength: parent.maxLength - 10
-             ,children: Children(_U.list([]))
+             ,branches: Branches(_U.list([]))
              ,sproutingLeft: $Basics.not(parent.sproutingLeft)
              ,angle: angleToSproutFrom(parent)};
    });
-   var applyToChildren = F2(function (applicator,model) {
-      return Children(A2($List.map,applicator,getChildren(model)));
+   var applyToBranches = F2(function (applicator,model) {
+      return Branches(A2($List.map,applicator,getBranches(model)));
    });
    var grow = function (model) {
       return canGrow(model) ? _U.update(model,
       {length: grown(model.length)
-      ,children: A2(applyToChildren,grow,model)}) : _U.update(model,
-      {children: A2(applyToChildren,grow,model)});
+      ,branches: A2(applyToBranches,grow,model)}) : _U.update(model,
+      {branches: A2(applyToBranches,grow,model)});
    };
    var shrink = function (model) {
       return canShrink(model) ? _U.update(model,
       {length: shrunk(model.length)
-      ,children: A2(applyToChildren,shrink,model)}) : _U.update(model,
-      {children: A2(applyToChildren,shrink,model)});
+      ,branches: A2(applyToBranches,shrink,model)}) : _U.update(model,
+      {branches: A2(applyToBranches,shrink,model)});
    };
-   var moveChildren = F2(function (position,model) {
-      return A2(applyToChildren,
+   var moveBranches = F2(function (position,model) {
+      return A2(applyToBranches,
       A2(moveOffset,model,position),
       model);
    });
@@ -11977,38 +11974,42 @@ Elm.Main.make = function (_elm) {
    var move = F2(function (position,model) {
       return _U.update(model,
       {root: toElmCoordinates(position)
-      ,children: A2(moveChildren,position,model)});
+      ,branches: A2(moveBranches,position,model)});
    });
    var rotateChildOf = F3(function (parent,position,child) {
       return _U.update(child,
       {angle: child.angle - parent.angle + A2(rotated,position,parent)
-      ,children: A2(applyToChildren,
+      ,branches: A2(applyToBranches,
       A2(rotateChildOf,parent,position),
       child)});
    });
    var rotate = F2(function (position,model) {
       return _U.update(model,
       {angle: A2(rotated,position,model)
-      ,children: A2(applyToChildren,
+      ,branches: A2(applyToBranches,
       A2(rotateChildOf,model,position),
       model)});
    });
+   var growTowards = F2(function (sun,tree) {
+      return canGrow(tree) ? A2(rotate,sun,tree) : _U.update(tree,
+      {branches: A2(applyToBranches,growTowards(sun),tree)});
+   });
    var oneMore = F2(function (position,model) {
-      return Children(A2($List.append,
-      getChildren(model),
+      return Branches(A2($List.append,
+      getBranches(model),
       _U.list([A2(sproutFrom,position,model)])));
    });
-   var branchedChildren = function (model) {
+   var branchedBranches = function (model) {
       return A2(oneMore,tip(model),proudParent(model));
    };
    var proudParent = function (model) {
       return _U.update(model,
-      {children: A2(applyToChildren,branch,model)});
+      {branches: A2(applyToBranches,branch,model)});
    };
    var branch = function (model) {
       return _U.cmp(model.length,
       model.maxLength) < 0 ? _U.update(model,
-      {children: branchedChildren(model)
+      {branches: branchedBranches(model)
       ,sproutingLeft: $Basics.not(model.sproutingLeft)}) : proudParent(model);
    };
    var update = F2(function (action,model) {
@@ -12016,55 +12017,50 @@ Elm.Main.make = function (_elm) {
       switch (_p4.ctor)
       {case "NoOp": return model;
          case "Grow": return grow(model);
-         case "Move": return A2(move,_p4._0,model);
          case "Branch": return branch(model);
-         case "Shrink": return shrink(model);
-         case "Rotate": return A2(rotate,_p4._0,model);
-         default: return A2(accelerate,_p4._0,model);}
+         default: return A2(growTowards,_p4._0,model);}
    });
    var main = A2($Signal.map,
    view(address),
    A3($Signal.foldp,update,init,actions));
-   var Model = F6(function (a,b,c,d,e,f) {
+   var Tree = F6(function (a,b,c,d,e,f) {
       return {root: a
              ,length: b
              ,maxLength: c
-             ,children: d
+             ,branches: d
              ,sproutingLeft: e
              ,angle: f};
    });
    return _elm.Main.values = {_op: _op
-                             ,Model: Model
-                             ,Children: Children
+                             ,Tree: Tree
+                             ,Branches: Branches
                              ,Position: Position
                              ,init: init
                              ,startingRoot: startingRoot
                              ,direction: direction
-                             ,getChildren: getChildren
-                             ,extractModels: extractModels
+                             ,getBranches: getBranches
+                             ,extractTrees: extractTrees
                              ,sproutFrom: sproutFrom
                              ,angleToSproutFrom: angleToSproutFrom
                              ,NoOp: NoOp
                              ,Grow: Grow
-                             ,Shrink: Shrink
-                             ,Move: Move
                              ,Branch: Branch
-                             ,Rotate: Rotate
-                             ,Accelerate: Accelerate
+                             ,GrowTowards: GrowTowards
                              ,update: update
                              ,grow: grow
                              ,grown: grown
                              ,canGrow: canGrow
+                             ,growTowards: growTowards
                              ,shrink: shrink
                              ,shrunk: shrunk
                              ,canShrink: canShrink
-                             ,applyToChildren: applyToChildren
+                             ,applyToBranches: applyToBranches
                              ,move: move
-                             ,moveChildren: moveChildren
+                             ,moveBranches: moveBranches
                              ,moveOffset: moveOffset
                              ,toElmCoordinates: toElmCoordinates
                              ,branch: branch
-                             ,branchedChildren: branchedChildren
+                             ,branchedBranches: branchedBranches
                              ,proudParent: proudParent
                              ,oneMore: oneMore
                              ,rotate: rotate
@@ -12082,7 +12078,7 @@ Elm.Main.make = function (_elm) {
                              ,mouseAction: mouseAction
                              ,view: view
                              ,incarnate: incarnate
-                             ,incarnateChildren: incarnateChildren
+                             ,incarnateBranches: incarnateBranches
                              ,shapeOf: shapeOf
                              ,svgPath: svgPath
                              ,controlPoint: controlPoint
