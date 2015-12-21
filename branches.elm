@@ -40,7 +40,7 @@ init =
 
 startingRoot : Position
 startingRoot =
-  {x = 0, y = 0}
+  {x = 0, y = -(toFloat height) / 2}
 
 direction : Model -> Position
 direction model =
